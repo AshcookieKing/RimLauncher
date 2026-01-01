@@ -442,7 +442,7 @@ async function renderLegionOnlineReport(guild, row, channel, serverData, db, tab
 
     filteredPlayers.sort((a, b) => a.localeCompare(b, 'ru', { sensitivity: 'base' }));
 
-    const legionName = row.LegionName || guild.name || 'Rim Conflict';
+    const legionName = row.LegionName || guild.name || 'StarFront';
 
     let embedColor = row.LegionColor || '#0066ff';
     let invalidColor = false;

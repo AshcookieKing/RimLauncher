@@ -89,7 +89,7 @@ def main() -> None:
         "\n[i] Boosty: официального API для автопроверки нет. Варианты:\n"
         "    • ЮMoney в лаунчере (авто через payment_gateway.py)\n"
         "    • Boosty + webhook → /api/launcher/donate/webhook/boosty\n"
-        "    • Boosty + ключ → RIM POINT → «Активировать ключ»"
+        "    • Boosty + ключ → STAR POINT → «Активировать ключ»"
     )
 
 

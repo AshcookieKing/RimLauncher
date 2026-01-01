@@ -1,6 +1,6 @@
 # StarFront Launcher
 
-**Версия:** 1.2.1-alpha  
+**Версия:** 1.2.8-alpha  
 **Платформа:** Windows 10/11 (x64)
 
 Десктопный лаунчер для тактического RP-сервера **StarFront** (Arma 3 — Clone Wars).
@@ -10,17 +10,17 @@
 ## Скачать
 
 **Прямая ссылка (всегда последняя версия):**  
-https://github.com/AshcookieKing/RimLauncher/releases/latest/download/RimConflictLauncher.exe
+https://github.com/AshcookieKing/StarFront/releases/latest/download/StarFrontLauncher.exe
 
 **Страница релиза:**  
-https://github.com/AshcookieKing/RimLauncher/releases/latest
+https://github.com/AshcookieKing/StarFront/releases/latest
 
-Все сборки — в **[Releases](https://github.com/AshcookieKing/RimLauncher/releases)**.
+Все сборки — в **[Releases](https://github.com/AshcookieKing/StarFront/releases)**.
 
 | Файл | Описание |
 |------|----------|
-| `RimConflictLauncher.exe` | Portable, установка не нужна |
-| `RimConflictLauncher-<версия>.zip` | Архив с EXE |
+| `StarFrontLauncher.exe` | Portable, установка не нужна |
+| `StarFrontLauncher-<версия>.zip` | Архив с EXE |
 
 Лаунчер при запуске проверяет обновления на GitHub и показывает окно с кнопкой **«Обновить сейчас»**.
 
@@ -28,7 +28,7 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 
 ## Установка
 
-1. Скачайте `RimConflictLauncher.exe` по ссылке выше или со страницы [Releases](https://github.com/AshcookieKing/RimLauncher/releases).
+1. Скачайте `StarFrontLauncher.exe` по ссылке выше или со страницы [Releases](https://github.com/AshcookieKing/StarFront/releases).
 2. Положите в любую папку и запустите.
 3. Войдите через **Discord** (аккаунт на сервере проекта).
 4. Ответьте на вопрос **«Вы новичок?»** — для новичков откроется канал 327-го батальона.
@@ -48,9 +48,9 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 
 - Запуск Arma 3 с проверкой модов Workshop
 - TeamSpeak 3 + TFAR
-- Discord — профиль, звание, фракция, RIM POINT
+- Discord — профиль, звание, фракция, STAR POINT
 - Онлайн сервера
-- +1 RIM POINT каждый час игры
+- +1 STAR POINT каждый час игры
 - Новости, ивенты, донат, заявки в подразделение
 - Авто-обновление из лаунчера
 
@@ -67,10 +67,18 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 
 ## Changelog
 
+### 1.2.8-alpha
+
+- Ребрендинг репозитория и EXE: **StarFront Launcher**
+- API `109.248.4.174`, новости/медиа, заявки и предложения
+
+### 1.2.2-alpha
+
+- Переименование: **STAR POINT** вместо RIM POINT
+
 ### 1.2.1-alpha
 
 - Логотип StarFront с голографическим эффектом
-- Затемнение баннера сверху и снизу
 - Новый пресет модов SF4
 - TeamSpeak пароль: StarFront
 - Подразделения: CG, 104‑й, RS
@@ -79,46 +87,6 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 
 - Ребрендинг: **StarFront**
 - Новый фон лаунчера
-
-### 1.1.7-alpha
-
-- Исправлено начисление RIM POINT за игру (Rim API playtime + fallback)
-
-### 1.1.6-alpha
-
-- Гайд больше не открывается при каждом запуске — только при первом входе
-
-### 1.1.5-alpha
-
-- Гайд для новичков показывается только один раз (запоминается после закрытия)
-
-### 1.1.4-alpha
-
-- Обновлён пресет модов (07.06.2026)
-
-### 1.1.3-alpha
-
-- Полноэкранное окно обновления
-- Исправлен показ «Вы новичок?» для новых игроков
-
-### 1.1.2-alpha
-
-- Тест автообновления
-
-### 1.1.1-alpha
-
-- Окно обновления с установкой в один клик
-- Исправлены ссылки на скачивание и проверка pre-release
-- TeamSpeak: без повторного подключения на сервер
-
-### 1.1.0-alpha
-
-- Обновлён пресет модов
-- Авто-проверка обновлений через GitHub Releases
-
-### 1.0.0
-
-- Первый публичный релиз
 
 ---
 

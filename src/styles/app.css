@@ -34,31 +34,14 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 0 10px var(--blue-glow)) brightness(1.15);
-  animation: holoLogoFlicker 4s ease-in-out infinite;
 }
 
 .holo-logo-scan {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(0, 230, 255, 0.35) 48%,
-    transparent 52%
-  );
-  animation: holoLogoScan 2.8s linear infinite;
-  pointer-events: none;
-  mix-blend-mode: screen;
+  display: none;
 }
 
 .holo-logo-glitch {
-  position: absolute;
-  inset: -2px;
-  background: linear-gradient(90deg, transparent, rgba(0, 200, 255, 0.2), transparent);
-  animation: holoLogoGlitch 5s steps(1) infinite;
-  pointer-events: none;
-  opacity: 0;
+  display: none;
 }
 
 [data-animations='off'] .holo-logo,
@@ -69,7 +52,6 @@
 
 .title-logo {
   height: 30px;
-  filter: drop-shadow(0 0 8px var(--blue-glow));
 }
 
 .title-text {
@@ -187,7 +169,7 @@
     linear-gradient(90deg, rgba(2, 8, 16, 0.28) 0%, transparent 42%, rgba(2, 8, 16, 0.72) 100%);
 }
 
-/* Holographic StarFront logo */
+/* StarFront logo (static PNG) */
 .logo-holo {
   position: relative;
   display: inline-flex;
@@ -213,133 +195,12 @@
 }
 
 .logo-holo__img {
-  position: relative;
-  z-index: 2;
   width: 100%;
   height: 100%;
   object-fit: contain;
   border-radius: 50%;
-  filter: drop-shadow(0 0 10px rgba(0, 200, 255, 0.55));
-  animation: logoHoloPulse 3.2s ease-in-out infinite;
+  display: block;
 }
-
-.logo-holo__glow {
-  position: absolute;
-  inset: -18%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 210, 255, 0.4) 0%, transparent 68%);
-  animation: logoHoloGlow 2.8s ease-in-out infinite alternate;
-  pointer-events: none;
-}
-
-.logo-holo__ring {
-  position: absolute;
-  inset: -3px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 220, 255, 0.55);
-  box-shadow: 0 0 12px rgba(0, 200, 255, 0.35), inset 0 0 10px rgba(0, 200, 255, 0.15);
-  animation: logoHoloRing 4s linear infinite;
-  pointer-events: none;
-}
-
-.logo-holo__scan {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  overflow: hidden;
-  z-index: 3;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    rgba(120, 230, 255, 0.18) 48%,
-    rgba(0, 200, 255, 0.35) 50%,
-    rgba(120, 230, 255, 0.18) 52%,
-    transparent 100%
-  );
-  background-size: 100% 220%;
-  animation: logoHoloScan 2.4s linear infinite;
-  mix-blend-mode: screen;
-}
-
-.logo-holo__flicker {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  z-index: 4;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent 40%, rgba(180, 255, 255, 0.12) 50%, transparent 60%);
-  animation: logoHoloFlicker 5s steps(2, end) infinite;
-}
-
-@keyframes logoHoloPulse {
-  0%,
-  100% {
-    filter: drop-shadow(0 0 8px rgba(0, 200, 255, 0.45)) brightness(1);
-  }
-  50% {
-    filter: drop-shadow(0 0 16px rgba(0, 230, 255, 0.85)) brightness(1.08);
-  }
-}
-
-@keyframes logoHoloGlow {
-  from {
-    opacity: 0.55;
-    transform: scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1.08);
-  }
-}
-
-@keyframes logoHoloRing {
-  0% {
-    transform: rotate(0deg);
-    border-color: rgba(0, 220, 255, 0.35);
-  }
-  50% {
-    border-color: rgba(120, 240, 255, 0.85);
-  }
-  100% {
-    transform: rotate(360deg);
-    border-color: rgba(0, 220, 255, 0.35);
-  }
-}
-
-@keyframes logoHoloScan {
-  0% {
-    background-position: 0 -40%;
-  }
-  100% {
-    background-position: 0 140%;
-  }
-}
-
-@keyframes logoHoloFlicker {
-  0%,
-  92%,
-  100% {
-    opacity: 0.15;
-  }
-  93%,
-  95% {
-    opacity: 0.55;
-  }
-  94%,
-  96% {
-    opacity: 0.05;
-  }
-}
-
-[data-animations='off'] .logo-holo__img,
-[data-animations='off'] .logo-holo__glow,
-[data-animations='off'] .logo-holo__ring,
-[data-animations='off'] .logo-holo__scan,
-[data-animations='off'] .logo-holo__flicker {
-  animation: none !important;
-}
-
 
 .holo-pulse {
   position: absolute;
@@ -1483,10 +1344,63 @@
 }
 .team-list li {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(0, 200, 255, 0.08);
 }
+
+.team-member-link {
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: #7ee8ff;
+}
+
+.team-member-link:hover strong {
+  text-decoration: underline;
+}
+
+.team-member-link strong {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+}
+
+.team-list li span {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+
+.news-modal-hint {
+  padding: 0 20px 8px;
+  margin: 0;
+}
+
+.news-type-badge {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7ee8ff;
+  border: 1px solid rgba(0, 200, 255, 0.25);
+  background: rgba(0, 40, 70, 0.35);
+}
+
+.news-item--media .news-type-badge {
+  color: #ffb8e8;
+  border-color: rgba(255, 120, 200, 0.35);
+}
+
+.cal-event--announce {
+  border-left-color: rgba(255, 200, 80, 0.65);
+}
+
 .profile-create {
   margin-top: 16px;
   padding-top: 12px;
@@ -2075,5 +1989,129 @@
   font-weight: 600;
   border-color: rgba(0, 212, 255, 0.55) !important;
   color: #9eeaff !important;
+}
+
+/* RP Rules full-page view */
+.rp-rules-page {
+  position: fixed;
+  inset: 48px 0 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(2, 10, 22, 0.97) 0%, rgba(4, 16, 32, 0.98) 100%);
+  border-top: 1px solid rgba(0, 200, 255, 0.15);
+  backdrop-filter: blur(14px);
+}
+
+.rp-rules-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid rgba(0, 200, 255, 0.12);
+  background: linear-gradient(90deg, rgba(0, 40, 70, 0.35), transparent);
+}
+
+.rp-rules-header__titles h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.18em;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.rp-rules-header__titles p {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.rp-rules-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 28px 40px;
+  max-width: 920px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.rp-rules-section {
+  margin-bottom: 32px;
+}
+
+.rp-rules-section h2 {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  color: #7ee8ff;
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 200, 255, 0.2);
+}
+
+.rp-rules-subtitle {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin: -6px 0 14px;
+}
+
+.rp-rules-text {
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0 0 10px;
+}
+
+.rp-rules-term {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 200, 255, 0.12);
+  background: rgba(0, 30, 55, 0.35);
+}
+
+.rp-rules-term__abbr {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #00e6ff;
+  letter-spacing: 0.08em;
+}
+
+.rp-rules-term p,
+.rp-rules-card p {
+  margin: 6px 0 0;
+  color: var(--text-dim);
+  line-height: 1.55;
+  font-size: 0.88rem;
+}
+
+.rp-rules-card {
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  border-left: 3px solid rgba(0, 220, 255, 0.55);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.rp-rules-card h3 {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #b8f0ff;
+  letter-spacing: 0.04em;
+}
+
+.rp-rules-bullet {
+  margin: 0 0 8px 18px;
+  color: var(--text);
+  line-height: 1.5;
+  font-size: 0.88rem;
+}
+
+.rp-rules-page--standalone {
+  inset: 0;
 }
 

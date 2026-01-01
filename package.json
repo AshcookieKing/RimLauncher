@@ -1,16 +1,16 @@
 {
   "name": "starfront-launcher",
-  "version": "1.2.1-alpha",
+  "version": "1.2.8-alpha",
   "description": "StarFront — Arma 3 Launcher",
   "author": "StarFront",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
-    "build": "vite build",
+    "build": "node scripts/sync-bot-config.mjs && vite build",
     "start": "electron .",
-    "pack": "npm run build && electron-builder --win portable",
-    "release:zip": "powershell -NoProfile -Command \"Compress-Archive -Force -Path release\\RimConflictLauncher.exe -DestinationPath release\\RimConflictLauncher-$((Get-Content package.json | ConvertFrom-Json).version).zip\"",
+    "pack": "node scripts/sync-bot-config.mjs && npm run build && electron-builder --win portable",
+    "release:zip": "powershell -NoProfile -Command \"Compress-Archive -Force -Path release\\StarFrontLauncher.exe -DestinationPath release\\StarFrontLauncher-$((Get-Content package.json | ConvertFrom-Json).version).zip\"",
     "release:meta": "node scripts/generate-latest-yml.mjs",
     "release:prepare": "npm run pack && npm run release:zip && npm run release:meta",
     "pack:store": "node scripts/make-appx-assets.mjs && npm run build && electron-builder --config electron-builder.store.cjs --win appx --x64",
@@ -18,7 +18,7 @@
     "icon": "node scripts/make-app-icon.mjs"
   },
   "build": {
-    "appId": "com.rimconflict.launcher",
+    "appId": "com.starfront.launcher",
     "productName": "StarFront Launcher",
     "icon": "build/icon.png",
     "directories": {
@@ -43,10 +43,10 @@
     "compression": "store",
     "win": {
       "target": [{ "target": "portable", "arch": ["x64"] }],
-      "artifactName": "RimConflictLauncher-${version}-portable.exe"
+      "artifactName": "StarFrontLauncher-${version}-portable.exe"
     },
     "portable": {
-      "artifactName": "RimConflictLauncher.exe"
+      "artifactName": "StarFrontLauncher.exe"
     }
   },
   "dependencies": {

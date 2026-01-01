@@ -34,7 +34,7 @@ module.exports = {
   win: {
     icon: 'build/icon.ico',
     target: [{ target: 'appx', arch: ['x64'] }],
-    artifactName: 'RimConflictLauncher-${version}.${ext}',
+    artifactName: 'StarFrontLauncher-${version}.${ext}',
     signAndEditExecutable: false,
   },
   appx: {

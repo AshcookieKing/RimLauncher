@@ -57,6 +57,14 @@ function startOnlineStatusServer() {
     res.end(JSON.stringify({ success: false, error: 'not found' }));
   });
 
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`Online status: порт ${PORT} занят — используем уже запущенный сервер`);
+      return;
+    }
+    console.error('online-status-server:', err.message || err);
+  });
+
   server.listen(PORT, HOST, () => {
     console.log(`📡 Online status HTTP http://${HOST}:${PORT}/api/online (poll ${INTERVAL_MS}ms)`);
   });

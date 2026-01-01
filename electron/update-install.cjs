@@ -6,7 +6,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 
-const USER_AGENT = 'RimConflictLauncher';
+const USER_AGENT = 'StarFrontLauncher';
 
 function downloadFile(url, destPath, onProgress) {
   return new Promise((resolve, reject) => {

@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $owner = 'AshcookieKing'
-$repo = 'RimLauncher'
+$repo = 'StarFront'
 $tag = "v$Version"
 
 $credRaw = "protocol=https`nhost=github.com`n`n" | git credential fill 2>$null
@@ -21,7 +21,7 @@ $headers = @{
 $body = @{
   tag_name         = $tag
   name             = "StarFront Launcher $Version"
-  body             = "StarFront logo holo, SF4 preset, TS password StarFront, units CG/104/RS. Version $Version"
+  body             = "RP rules site, SF4 preset, TS StarFront address. Version $Version"
   draft            = $false
   prerelease       = $false
   make_latest      = 'true'
@@ -32,8 +32,8 @@ $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$owner/$repo/rel
 $uploadBase = $release.upload_url -replace '\{.*$', ''
 
 $assets = @(
-  'RimConflictLauncher.exe',
-  "RimConflictLauncher-$Version.zip",
+  'StarFrontLauncher.exe',
+  "StarFrontLauncher-$Version.zip",
   'latest.yml'
 )
 

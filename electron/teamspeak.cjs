@@ -4,7 +4,8 @@ const net = require('net');
 const path = require('path');
 const os = require('os');
 
-const TS_SERVER = '185.104.249.127';
+const TS_SERVER = 'StarFront';
+const TS_SERVER_FALLBACK = '185.104.249.127';
 const TS_PORT = 10026;
 const TS_PASSWORD = 'StarFront';
 
@@ -20,6 +21,7 @@ const TS3_CLIENT_PATHS = [
 ];
 
 const TS_INSTALLER_CANDIDATES = [
+  path.join(os.homedir(), 'Downloads', 'TeamSpeak_Client_(64bit)_v3.3.0-22604.exe'),
   path.join(os.homedir(), 'Downloads', 'TeamSpeak_Client_(64bit)_v3.5.1 (1) (1).exe'),
   path.join(os.homedir(), 'Downloads', 'TeamSpeak_Client_(64bit)_v3.5.1.exe'),
   path.join(os.homedir(), 'Downloads', 'TeamSpeak_Client_(64bit)_v3.5.1 (1).exe'),
@@ -213,13 +215,18 @@ function isConnectedViaTsLogs(host, port) {
 async function isConnectedToTeamSpeakServer(host = TS_SERVER, port = TS_PORT) {
   if (!isTeamSpeakRunning()) return false;
 
-  const response = await tsClientQuery('connectioninfo');
-  if (parseTsConnectionInfo(response, host, port)) return true;
+  const hosts = host === TS_SERVER ? [TS_SERVER, TS_SERVER_FALLBACK] : [host];
+  for (const h of hosts) {
+    const response = await tsClientQuery('connectioninfo');
+    if (parseTsConnectionInfo(response, h, port)) return true;
 
-  const status = await tsClientQuery('connectioninfo connection_status');
-  if (parseTsConnectionInfo(status, host, port)) return true;
+    const status = await tsClientQuery('connectioninfo connection_status');
+    if (parseTsConnectionInfo(status, h, port)) return true;
 
-  return isConnectedViaTsLogs(host, port);
+    if (isConnectedViaTsLogs(h, port)) return true;
+  }
+
+  return false;
 }
 
 function spawnDetached(command, args = [], opts = {}) {

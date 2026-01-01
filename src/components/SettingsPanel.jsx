@@ -276,8 +276,7 @@ export default function SettingsPanel({ settings, onSave, onBack, api }) {
           <div className="settings-block">
             <h3>Discord</h3>
             <p className="block-hint">
-              Привязка нужна для заявок в подразделение и доната. Откроется браузер — подтвердите вход на сервере Rim
-              Conflict.
+              Привязка нужна для заявок в подразделение и доната. Откроется браузер — подтвердите вход на сервере StarFront.
             </p>
             {discordLinked ? (
               <p className="form-success">
@@ -464,7 +463,9 @@ export default function SettingsPanel({ settings, onSave, onBack, api }) {
             СОХРАНИТЬ
           </button>
         </form>
-        <p className="settings-footer">TeamSpeak: 185.104.249.127:10026 · Сервер: 109.248.4.45:2302</p>
+        <p className="settings-footer">
+          TeamSpeak: адрес <strong>StarFront</strong> · порт 10026 · пароль StarFront · Arma: 109.248.4.45:2302
+        </p>
       </section>
     </div>
   );

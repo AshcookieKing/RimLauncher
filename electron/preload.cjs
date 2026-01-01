@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('rimLauncher', {
   autoDetectGamePaths: (opts) => ipcRenderer.invoke('auto-detect-game-paths', opts),
   openDiscordInvite: (url) => ipcRenderer.invoke('open-discord-invite', url),
   openUrl: (url) => ipcRenderer.invoke('open-url', url),
+  openRpRulesWindow: () => ipcRenderer.invoke('open-rp-rules-window'),
   redeemBoosty: (payload) => ipcRenderer.invoke('redeem-boosty', payload),
   getSupportOnline: () => ipcRenderer.invoke('get-support-online'),
   getActiveTicket: (discordUserId) => ipcRenderer.invoke('get-active-ticket', discordUserId),

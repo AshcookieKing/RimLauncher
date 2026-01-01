@@ -10,11 +10,14 @@ Thumbs.db
 
 # Secrets / local identity
 build/store.identity.json
+electron/bot-config.cjs
 bot-manager-python/resources/config.json
 bot-manager-python/config.json
 
 # Build artifacts
+StarFrontLauncher.exe
 RimConflictLauncher.exe
+release-build/
 link_Rim_Conflict_to_Arma3.exe
 build/link_Rim_Conflict_to_Arma3/
 *.spec.bak

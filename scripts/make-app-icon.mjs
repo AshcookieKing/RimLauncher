@@ -1,14 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import sharp from 'sharp';
 
-const root = path.resolve(import.meta.dirname, '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const src =
   process.argv[2] ||
-  path.join(
-    process.env.USERPROFILE || '',
-    '.cursor/projects/c-Users-mashi-Desktop-rim-launcher/assets/c__Users_mashi_AppData_Roaming_Cursor_User_workspaceStorage_694f983ec4e10539026b2320b679904a_images_ChatGPT_Image_6____._2026__.__02_45_54__1_-c736016a-8785-4542-b5ed-096b454de389.png'
-  );
+  path.join(process.env.USERPROFILE || '', 'Downloads', 'logo_sff (1).png');
 
 const buildDir = path.join(root, 'build');
 const publicDir = path.join(root, 'public', 'assets');
@@ -27,8 +25,13 @@ const rounded = await sharp(src)
   .png()
   .toBuffer();
 
+// UI logo: keep original circular PNG (no extra effects)
+await sharp(src)
+  .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+  .png()
+  .toFile(path.join(publicDir, 'logo.png'));
+
 await sharp(rounded).png().toFile(path.join(buildDir, 'icon.png'));
-await sharp(rounded).resize(256, 256).png().toFile(path.join(publicDir, 'logo.png'));
 await sharp(rounded).resize(256, 256).toFile(path.join(buildDir, 'icon.ico'));
 
 console.log('Icons written to build/icon.png, build/icon.ico, public/assets/logo.png');

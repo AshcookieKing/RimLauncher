@@ -1,9 +1,12 @@
 const https = require('https');
 const http = require('http');
+const directFeed = require('./discord-direct.cjs');
 
 const DEFAULT_API = 'http://109.248.4.174:5003';
+const API_GET_TIMEOUT_MS = 8000;
+const API_POST_TIMEOUT_MS = 20000;
 
-function fetchJson(url, timeoutMs = 30000, options = {}) {
+function fetchJson(url, timeoutMs = API_GET_TIMEOUT_MS, options = {}) {
   return new Promise((resolve, reject) => {
     const lib = url.startsWith('https') ? https : http;
     const req = lib.request(
@@ -49,15 +52,34 @@ async function fetchLauncherStatus(discordUserId, apiBaseUrl = DEFAULT_API, play
   if (discordUserId) params.set('discord_user_id', String(discordUserId));
   if (playerName) params.set('player_name', String(playerName));
   const q = params.toString() ? `?${params.toString()}` : '';
+  const directNewsPromise = directFeed.fetchNewsDirect().catch(() => []);
+  const offline = {
+    success: false,
+    online: { online: 0, max_players: 0, status: 'offline', server_ip: '109.248.4.45', server_port: 2302 },
+    profile: { display_name: 'Гость', rank: '—', faction: '—', role: '—', rim_points: 0 },
+    news: [],
+  };
   try {
-    return await fetchJson(`${base}/api/launcher/status${q}`);
+    const data = await fetchJson(`${base}/api/launcher/status${q}`, API_GET_TIMEOUT_MS);
+    const directNews = await directNewsPromise;
+    if (directNews.length) {
+      data.news = directNews;
+    } else if (!data.news?.length) {
+      const retry = await directFeed.fetchNewsDirect(true).catch(() => []);
+      if (retry.length) data.news = retry;
+    }
+    return data;
   } catch (e) {
+    const directNews = await directNewsPromise;
+    const msg = e.message || 'Ошибка API';
+    const apiDown = /ECONNREFUSED|ECONNRESET|ETIMEDOUT|connect E|10061|Таймаут|timeout|недоступен/i.test(msg);
     return {
-      success: false,
-      error: e.message,
-      online: { online: 0, max_players: 0, status: 'offline', server_ip: '109.248.4.45', server_port: 2302 },
-      profile: { display_name: 'Гость', rank: '—', faction: '—', role: '—', rim_points: 0 },
-      news: [],
+      ...offline,
+      error: apiDown
+        ? 'API бота недоступен (109.248.4.174:5003) — запустите text_bot на сервере'
+        : msg,
+      news: directNews,
+      api_offline: apiDown,
     };
   }
 }
@@ -71,21 +93,46 @@ async function fetchLauncherOnline(apiBaseUrl = DEFAULT_API) {
   }
 }
 
-async function postJson(path, payload, apiBaseUrl = DEFAULT_API) {
+async function postJson(path, payload, apiBaseUrl = DEFAULT_API, timeoutMs = API_POST_TIMEOUT_MS) {
   const base = apiBase(apiBaseUrl);
-  return fetchJson(`${base}${path}`, 45000, {
+  return fetchJson(`${base}${path}`, timeoutMs, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
 }
 
-async function getJson(path, apiBaseUrl = DEFAULT_API) {
-  return fetchJson(`${apiBase(apiBaseUrl)}${path}`);
+async function safePost(path, payload, apiBaseUrl = DEFAULT_API) {
+  try {
+    return await postJson(path, payload, apiBaseUrl);
+  } catch (e) {
+    return { success: false, error: e.message || 'Ошибка API' };
+  }
+}
+
+async function safeGet(path, apiBaseUrl = DEFAULT_API, timeoutMs = API_GET_TIMEOUT_MS) {
+  try {
+    return await getJson(path, apiBaseUrl, timeoutMs);
+  } catch (e) {
+    return { success: false, error: e.message || 'Ошибка API' };
+  }
+}
+
+async function getJson(path, apiBaseUrl = DEFAULT_API, timeoutMs = API_GET_TIMEOUT_MS) {
+  return fetchJson(`${apiBase(apiBaseUrl)}${path}`, timeoutMs);
 }
 
 async function fetchEvents(apiBaseUrl) {
-  return getJson('/api/launcher/events', apiBaseUrl);
+  const directPromise = directFeed.fetchEventsDirect().catch(() => null);
+  try {
+    const data = await getJson('/api/launcher/events', apiBaseUrl, API_GET_TIMEOUT_MS);
+    if (data?.channel_posts?.length) return data;
+    const direct = await directPromise;
+    return direct ? { success: true, ...direct } : data;
+  } catch {
+    const direct = await directPromise;
+    return direct ? { success: true, ...direct } : { success: false, channel_posts: [], live: [] };
+  }
 }
 
 async function fetchGuide(apiBaseUrl) {
@@ -97,7 +144,7 @@ async function redeemBoosty({ discordUserId, code }, apiBaseUrl) {
 }
 
 async function createTicket(payload, apiBaseUrl) {
-  return postJson('/api/launcher/ticket/create', payload, apiBaseUrl);
+  return safePost('/api/launcher/ticket/create', payload, apiBaseUrl);
 }
 
 async function fetchTicketMessages(ticketId, apiBaseUrl) {
@@ -121,7 +168,7 @@ async function fetchSupportOnline(apiBaseUrl) {
 }
 
 async function submitSuggestion(payload, apiBaseUrl) {
-  return postJson('/api/launcher/suggestion', payload, apiBaseUrl);
+  return safePost('/api/launcher/suggestion', payload, apiBaseUrl);
 }
 
 async function fetchActiveTicket(discordUserId, apiBaseUrl) {
@@ -129,7 +176,7 @@ async function fetchActiveTicket(discordUserId, apiBaseUrl) {
 }
 
 async function createDonation(payload, apiBaseUrl) {
-  return postJson('/api/launcher/donate/create', payload, apiBaseUrl);
+  return safePost('/api/launcher/donate/create', payload, apiBaseUrl);
 }
 
 async function getActiveDonation(discordUserId, apiBaseUrl) {
@@ -162,7 +209,7 @@ async function fetchActiveUnitApplication(opts, apiBaseUrl) {
 }
 
 async function createUnitApplication(payload, apiBaseUrl) {
-  return postJson('/api/launcher/unit/apply', payload, apiBaseUrl);
+  return safePost('/api/launcher/unit/apply', payload, apiBaseUrl);
 }
 
 async function fetchUnitApplicationMessages(appId, discordUserId, apiBaseUrl) {
@@ -185,7 +232,7 @@ async function cancelDonation(orderId, payload, apiBaseUrl) {
 }
 
 async function checkDonationPayment(orderId, payload, apiBaseUrl) {
-  return postJson(`/api/launcher/donate/${orderId}/check`, payload, apiBaseUrl);
+  return safePost(`/api/launcher/donate/${orderId}/check`, payload, apiBaseUrl);
 }
 
 async function fetchActiveLeaveRequest(discordUserId, apiBaseUrl) {

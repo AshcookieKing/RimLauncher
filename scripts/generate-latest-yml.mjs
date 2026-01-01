@@ -15,8 +15,8 @@ function sha512(filePath) {
   return hash.digest('base64');
 }
 
-const exeName = 'RimConflictLauncher.exe';
-const zipName = `RimConflictLauncher-${version}.zip`;
+const exeName = 'StarFrontLauncher.exe';
+const zipName = `StarFrontLauncher-${version}.zip`;
 const exePath = path.join(releaseDir, exeName);
 const zipPath = path.join(releaseDir, zipName);
 

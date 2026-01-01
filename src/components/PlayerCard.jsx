@@ -98,7 +98,7 @@ export default function PlayerCard({
             )}
           </div>
         )}
-        <div className="online-block" title="Online Bot — обновление каждые 3 сек (http://127.0.0.1:8791)">
+        <div className="online-block" title="Онлайн: прямой запрос A2S к серверу 109.248.4.45:2303 или API бота">
           <span className="online-pulse" data-status={isServerUp ? 'online' : serverStatus} />
           <span className="online-text">
             Игроков онлайн: <strong>{online}</strong>

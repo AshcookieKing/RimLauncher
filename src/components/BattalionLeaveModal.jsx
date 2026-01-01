@@ -63,7 +63,7 @@ export default function BattalionLeaveModal({ open, onClose, battalion, leaveReq
     }
     setLeaveReq(res.request);
     setMessages(res.messages || []);
-    setStatus('Rim Launcher: рапорт отправлен командиру.');
+    setStatus('StarFront: рапорт отправлен командиру.');
   };
 
   const sendMessage = async () => {
@@ -101,7 +101,7 @@ export default function BattalionLeaveModal({ open, onClose, battalion, leaveReq
         {mode === 'form' && (
           <div className="modal-body">
             <p className="block-hint bot-hint">
-              Rim Launcher: отправлю командиру рапорт с вашими данными (ник, позывной). После одобрения — снятие ролей
+              StarFront: отправлю командиру рапорт с вашими данными (ник, позывной). После одобрения — снятие ролей
               батальона.
             </p>
             {battalion && (

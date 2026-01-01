@@ -1,63 +1,44 @@
 /** Статический путеводитель — дополняется данными из Discord API */
 module.exports = {
+  rpRulesUrl: 'http://109.248.4.174:8090/',
+  teamspeakDownloadUrl: 'https://www.filepuma.com/download/teamspeak_client_64bit_3.3.0-22604/',
   team: [
-    { name: 'ASH Cookie King', role: 'Создатель проекта / Тех. директор' },
-    { name: 'AWI', role: 'Куратор проекта' },
-    { name: 'Molten', role: 'Комьюнити менеджер' },
-    { name: 'Xenon', role: 'Глав. модер / Кур. Ордена' },
-    { name: '[HQ] CoL 1963 Bright (mr Klipsik)', role: 'Глава ивентологии' },
+    { name: 'ImaGunDi', role: 'Тех. Администрация', discord_id: '369169793292566529' },
+    { name: 'VisCi', role: 'Руководство проекта', discord_id: '427781570112520204' },
+    { name: '[CG SW] LT XVI Tower', role: 'Руководство проекта', discord_id: '915588352089133086' },
+    { name: '[CG] SLT 1443 Lanc | ARC', role: 'Руководство проекта', discord_id: '400725682369462272' },
+    { name: '[38] CC 7772 Ash | CMD', role: 'Создатель', discord_id: '276670342469124096' },
+    { name: '[CG]MLT 9750 Spark/[MERC]Kindred', role: 'РП наблюдатель', discord_id: '475059837021978634' },
   ],
   sections: [
     {
-      id: 'rules',
-      title: 'РП правила',
-      channelId: '1473748089872453647',
-      url: 'https://docs.google.com/document/d/17FavuZ8Dtl2UUsWZvYtX5LeqItrhgke69MemjqXhdbw/edit?tab=t.0#heading=h.4o96atchxlwt',
-      summary: 'Основа игры на сервере: уважение к игрокам, отыгрыш персонажа клона/офицера ВАР, запрет на RDM/VDM, метагейм и powergaming. Следуйте приказам старших по званию в рамках RP.',
-    },
-    {
       id: 'about',
       title: 'О проекте',
-      channelId: '1473748089872453650',
-      summary: 'StarFront — RP-сервер Clone Wars в Arma 3. Играем за Великую Армию Республики, участвуем в операциях, ивентах и сюжетных линиях.',
-    },
-    {
-      id: 'donations',
-      title: 'Лист пожертвований',
-      channelId: '1481200530251448340',
-      url: 'https://boosty.to/imagundi/donate',
-      summary: 'Поддержка проекта через Boosty. За пожертвование можно получить RIM POINT в лаунчере (ключ подтверждения после оплаты).',
+      channelId: '1479125948459778051',
+      summary:
+        'StarFront — RP-сервер Clone Wars в Arma 3. Следите за видео в новостях лаунчера и на TikTok @starfrontrp.',
+      url: 'https://www.tiktok.com/@starfrontrp',
     },
     {
       id: 'ustav',
-      title: 'Устав ВАР — новичку',
+      title: 'Устав ВАР',
       channelId: null,
-      url: 'https://docs.google.com/document/d/1Ucpl_lrnF7r_56hqMlcccZ1vc8jvF1y4_ylrXdx0jhQ/edit?tab=t.0#heading=h.qz0zsy6lnh8u',
-      summary: `Звания: CT (клон-трупер), SGT, LT, CPT, MAJ, COL, CC, MC и др. Обращение по званию. Структура: легион → рота → отделение. Дисциплина, подчинение приказам, форма и позывной по уставу.`,
+      url: 'https://docs.google.com/document/d/1Y5ycWrdkpOvzOmQ3j0a8m71CL85ZWilYOcPYj1gcb8I/edit?tab=t.0',
+      summary:
+        'Основной устав проекта StarFront: звания, структура подразделений, дисциплина и нормы поведения на сервере.',
       bullets: [
         'Позывной и номер — часть RP-имени профиля Arma 3',
         'Звание определяет вашу роль в строю и на операциях',
-        'Нарушения устава — предупреждение, выговор, понижение (по решению командования)',
         'На сервере действует иерархия: приказ старшего — закон в бою',
       ],
-    },
-    {
-      id: 'stroevoy',
-      title: 'Строевой устав',
-      channelId: null,
-      url: 'https://docs.google.com/document/d/1noDu9o9iQ2bNl_YACkkcQXJ5Cp_-JMLD4FGk8SKZ8VI/edit?tab=t.0#heading=h.28f7eqju0fw5',
-      summary: 'Правила построения, салютирования, обращения к офицерам. В строю — молчание, unless приказано иное. Движение только по команде.',
     },
     {
       id: 'kmb',
       title: 'КМБ — курс молодого бойца',
       channelId: null,
-      urls: [
-        'https://docs.google.com/document/d/1xrM9VG8i2W4oHcBqiIbzNl4klfdRd4eBZZiYngLupvI/edit?tab=t.0#heading=h.l5c1thdz8q33',
-        'https://docs.google.com/document/d/1g1rXoCt0EgA9sOFiLnBUjmfLtPcy1z9Zjikqcxw1mEs/edit?tab=t.0',
-      ],
-      urlLabels: ['КМБ — основной', 'Курс молодого бойца'],
-      summary: 'Обязательное обучение для новобранцев: основы ACE, медицина, связь (TFAR/TeamSpeak), построение, базовые приказы.',
+      url: 'https://docs.google.com/document/d/14RUHKcykwlMBl8x95WoIeQuJWt_2wQ88sG5sVb0uPIE/edit?usp=sharing',
+      summary:
+        'Обязательное обучение для новобранцев: основы ACE, медицина, связь (TFAR/TeamSpeak), построение, базовые приказы.',
     },
     {
       id: 'database',
@@ -75,9 +56,12 @@ module.exports = {
   tutorialSteps: [
     { title: 'Добро пожаловать', text: 'Это лаунчер StarFront. Здесь вы запускаете игру, читаете новости и проходите обучение.' },
     { title: 'Профиль Arma 3', text: 'Создайте или выберите профиль в настройках. Звание читается из имени профиля по Уставу ВАР.' },
-    { title: 'Discord ID', text: 'Укажите свой Discord ID для RIM POINT, тикетов поддержки и персонализации.' },
-    { title: 'Моды', text: 'При нажатии СТАРТ лаунчер проверит и обновит моды из пресета автоматически.' },
-    { title: 'TeamSpeak + TFAR', text: 'Перед запуском игры лаунчер подключит вас к TeamSpeak 185.104.249.127:10026 (пароль StarFront) и установит плагин TFAR.' },
-    { title: 'Путеводитель', text: 'Изучите правила, устав и КМБ в разделе «Гайд». Удачи, trooper!' },
+    { title: 'Discord ID', text: 'Привяжите Discord для STAR POINT, тикетов поддержки и заявок в подразделения.' },
+    { title: 'Моды', text: 'При нажатии СТАРТ лаунчер проверит и обновит моды из пресета SF4 автоматически.' },
+    {
+      title: 'TeamSpeak + TFAR',
+      text: 'Установите TeamSpeak 3 (рекомендуется 3.3.x, при необходимости обновите до 3.6.2). Подключение → Подключиться → в поле «Адрес сервера» введите StarFront (пароль StarFront). Лаунчер также подключит автоматически и установит TFAR.',
+    },
+    { title: 'Путеводитель', text: 'Изучите устав, КМБ и РП правила на сайте проекта. Удачи, trooper!' },
   ],
 };

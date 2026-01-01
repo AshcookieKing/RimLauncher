@@ -4,7 +4,8 @@ const UNITS_FALLBACK = [
   { id: 'test', label: '🧪 Тест' },
   { id: 'cg', label: 'CG (Ударная гвардия)' },
   { id: '104', label: '104‑й батальон' },
-  { id: 'rs', label: 'RS' },
+  { id: '83', label: '83‑й батальон' },
+  { id: '38', label: '38‑й батальон' },
 ];
 
 const UNIT_APP_ID_KEY = 'rim_unit_app_id';
@@ -243,7 +244,7 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
   if (!open) return null;
 
   const needDiscord = () => {
-    setError('Rim Launcher: не нашёл вас в Discord. Для тикета укажите ник как на сервере или выберите профиль Arma с тем же ником.');
+    setError('StarFront: не нашёл вас в Discord. Для тикета укажите ник как на сервере или выберите профиль Arma с тем же ником.');
   };
 
   const ensureUid = async (extra = [], { requireLinked = false } = {}) => {
@@ -267,25 +268,33 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
   };
 
   const startTicket = async () => {
-    const uid = await ensureUid();
-    if (!uid) return needDiscord();
-    setLoading(true);
-    setError('');
-    const res = await api.createTicket({
-      discord_user_id: uid,
-      topic_key: 'custom',
-      custom_topic: 'Поддержка',
-      player_name: playerName,
-    });
-    setLoading(false);
-    if (!res.success) {
-      setError(res.error || 'Не удалось создать тикет');
+    const uid = await ensureUid([], { requireLinked: true });
+    if (!uid) {
+      setError('Войдите через Discord в настройках → «Привязать Discord», затем повторите.');
       return;
     }
-    setTicket(res.ticket);
-    setSupportOnline(true);
-    setMode('ticket-chat');
-    await loadTicketMessages(res.ticket.id);
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.createTicket({
+        discord_user_id: uid,
+        topic_key: 'custom',
+        custom_topic: 'Поддержка',
+        player_name: playerName,
+      });
+      if (!res?.success) {
+        setError(res?.error || 'Не удалось создать тикет');
+        return;
+      }
+      setTicket(res.ticket);
+      setSupportOnline(true);
+      setMode('ticket-chat');
+      await loadTicketMessages(res.ticket.id);
+    } catch (e) {
+      setError(e?.message || 'Таймаут API — перезапустите бота на сервере');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const sendMessage = async () => {
@@ -304,24 +313,36 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
   };
 
   const submitSuggestion = async () => {
-    const uid = await ensureUid();
-    if (!uid) return needDiscord();
+    const uid = await ensureUid([], { requireLinked: true });
+    if (!uid) {
+      setError('Войдите через Discord в настройках, затем повторите.');
+      return;
+    }
     if (!suggestionText.trim()) {
       setError('Напишите предложение');
       return;
     }
     setLoading(true);
-    const res = await api.submitSuggestion({
-      discord_user_id: uid,
-      text: suggestionText.trim(),
-      links: suggestionLinks.trim(),
-    });
-    setLoading(false);
-    if (res.success) {
-      setStatus('Предложение отправлено!');
-      setSuggestionText('');
-      setSuggestionLinks('');
-    } else setError(res.error || 'Ошибка');
+    setError('');
+    setStatus('');
+    try {
+      const res = await api.submitSuggestion({
+        discord_user_id: uid,
+        text: suggestionText.trim(),
+        links: suggestionLinks.trim(),
+      });
+      if (res?.success) {
+        setStatus('Предложение отправлено!');
+        setSuggestionText('');
+        setSuggestionLinks('');
+      } else {
+        setError(res?.error || 'Ошибка отправки');
+      }
+    } catch (e) {
+      setError(e?.message || 'Таймаут API');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const submitUnitApplication = async () => {
@@ -330,7 +351,7 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
       return;
     }
     if (!unitForm.nick.trim() || !unitForm.callsign.trim() || !unitForm.reason.trim()) {
-      setError('Rim Launcher: укажите Discord-ник, позывной и «Почему к нам»');
+      setError('StarFront: укажите Discord-ник, позывной и «Почему к нам»');
       return;
     }
     const uid = await ensureUid([], { requireLinked: true });
@@ -340,22 +361,27 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
     }
     setLoading(true);
     setError('');
-    const res = await api.createUnitApplication({
-      discord_user_id: uid,
-      unit_id: selectedUnit,
-      discord_username: unitForm.nick.trim() || playerName,
-      ...unitForm,
-    });
-    setLoading(false);
-    if (!res.success) {
-      setError(res.error || 'Не удалось отправить заявку');
-      return;
+    try {
+      const res = await api.createUnitApplication({
+        discord_user_id: uid,
+        unit_id: selectedUnit,
+        discord_username: unitForm.nick.trim() || playerName,
+        ...unitForm,
+      });
+      if (!res?.success) {
+        setError(res?.error || 'Не удалось отправить заявку');
+        return;
+      }
+      localStorage.setItem(UNIT_APP_ID_KEY, String(res.application.id));
+      setUnitApp(res.application);
+      setUnitMessages(res.messages || []);
+      setMode('unit-pending');
+      setStatus('Заявка отправлена командиру. Ожидайте ответа здесь или в Discord.');
+    } catch (e) {
+      setError(e?.message || 'Таймаут API');
+    } finally {
+      setLoading(false);
     }
-    localStorage.setItem(UNIT_APP_ID_KEY, String(res.application.id));
-    setUnitApp(res.application);
-    setUnitMessages(res.messages || []);
-    setMode('unit-pending');
-    setStatus('Rim Launcher: заявка отправлена командиру. Ожидайте ответа здесь или в Discord.');
   };
 
   const sendUnitMessage = async () => {
@@ -393,7 +419,7 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
     if (res.success) {
       setUnitApp(res.application);
       setMode('unit-done');
-      setStatus(res.role_granted ? 'Rim Launcher: роль батальона выдана автоматически' : 'Rim Launcher: запрос отправлен в Discord');
+      setStatus(res.role_granted ? 'StarFront: роль батальона выдана автоматически' : 'StarFront: запрос отправлен в Discord');
     } else setError(res.error || 'Ошибка');
   };
 
@@ -424,7 +450,7 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
     setUnitMessages([]);
     setMode('unit-select');
     setSelectedUnit('');
-    setStatus('Rim Launcher: заявка отозвана. Можете подать новую.');
+    setStatus('StarFront: заявка отозвана. Можете подать новую.');
   };
 
   const closeTicket = async () => {
@@ -639,7 +665,7 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
         {mode === 'unit-pending' && unitApp && (
           <div className="modal-body">
             <p className="form-success">Заявка #{unitApp.id} отправлена · подразделение {unitApp.unit_id}</p>
-            <p className="block-hint bot-hint">Rim Launcher: заявка у командира. Ожидайте — он напишет здесь или в Discord.</p>
+            <p className="block-hint bot-hint">StarFront: заявка у командира. Ожидайте — он напишет здесь или в Discord.</p>
             {unitMessages.length > 0 && (
               <div className="chat-messages unit-messages-preview">
                 {unitMessages.map((m) => (

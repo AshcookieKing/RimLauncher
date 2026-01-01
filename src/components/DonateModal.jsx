@@ -1,27 +1,37 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEscapeClose } from '../hooks/useEscapeClose';
+
+const BOOSTY_URL = 'https://boosty.to/imagundi/donate';
 
 const FALLBACK_SHOP = [
-  { id: 'test_payment', title: 'Тест оплаты', amount: 2, rim_points: 2, category: 'test', description: 'Проверка оплаты — только ЮMoney (на Boosty мин. 10 ₽).', yoomoney_only: true },
-  { id: 'mercenary', title: 'Наёмник', amount: 2000, rim_points: 2000, category: 'role', description: 'Вольный наемник — квента, контракты, снаряжение.' },
-  { id: 'arc', title: 'ARC', amount: 1200, rim_points: 1200, category: 'role', description: 'Элита армии — джетпак, спецвооружение.' },
-  { id: 'rc_squad', title: 'RC Отряд', amount: 4000, rim_points: 4000, category: 'role', description: 'RC отряд республики.' },
-  { id: 'jedi', title: 'Джедай', amount: 2000, rim_points: 2000, category: 'role', description: 'Квента + экзамен, световой меч.' },
-  { id: 'paint_uniform', title: 'Покраска формы', amount: 1500, rim_points: 1500, category: 'extra', description: 'Доп. услуга.' },
-  { id: 'paint_uniform_full', title: 'Покраска формы под ключ', amount: 1500, rim_points: 1500, category: 'extra', description: 'Покраска под ключ.' },
-  { id: 'model_custom', title: 'Создание модели с нуля', amount: 10000, rim_points: 10000, category: 'extra', description: '3D-модель с нуля.' },
-  { id: 'weapon_custom', title: 'Создание оружия под ключ', amount: 5000, rim_points: 5000, category: 'extra', description: 'Оружие под ключ.' },
+  { id: 'paint_uniform', title: 'Покраска формы', amount: 1500, category: 'studio', description: 'Покраска формы по вашему ТЗ.' },
+  {
+    id: 'paint_uniform_full',
+    title: 'Покраска формы под ключ',
+    amount: 1500,
+    category: 'studio',
+    description: 'Покраска формы под ключ (ARC и др.).',
+  },
+  { id: 'model_custom', title: 'Создание модели с нуля', amount: 10000, category: 'studio', description: '3D-модель с нуля под заказ.' },
+  { id: 'weapon_custom', title: 'Создание оружия под ключ', amount: 5000, category: 'studio', description: 'Оружие под ключ.' },
+  {
+    id: 'development_donate',
+    title: 'Пожертвование на развитие',
+    amount: 100,
+    category: 'donate',
+    custom_amount: true,
+    min_amount: 10,
+    description: 'Поддержка хостинга, разработки и рекламы проекта StarFront.',
+  },
 ];
 
-const BOOSTY_MIN_RUB = 10;
-
-export default function DonateModal({ open, onClose, profile, shop: shopProp, boostyMinRub, api, onChatOpen }) {
-  const boostyMin = Number(boostyMinRub) >= 1 ? Number(boostyMinRub) : BOOSTY_MIN_RUB;
+export default function DonateModal({ open, onClose, profile, shop: shopProp, api, onChatOpen }) {
   const shop = shopProp?.length ? shopProp : FALLBACK_SHOP;
-  const testItems = shop.filter((i) => i.category === 'test');
-  const roles = shop.filter((i) => i.category === 'role');
-  const extras = shop.filter((i) => i.category === 'extra');
+  const studioItems = useMemo(() => shop.filter((i) => i.category === 'studio'), [shop]);
+  const donateItems = useMemo(() => shop.filter((i) => i.category === 'donate'), [shop]);
+
   const [selected, setSelected] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('yoomoney');
+  const [customAmount, setCustomAmount] = useState('100');
   const [step, setStep] = useState('form');
   const [order, setOrder] = useState(null);
   const [lastPaid, setLastPaid] = useState(null);
@@ -32,6 +42,17 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [discordUserId, setDiscordUserId] = useState('');
+
+  useEscapeClose(open, onClose);
+
+  const payAmount = useMemo(() => {
+    if (!selected) return 0;
+    if (selected.custom_amount) {
+      const n = parseInt(String(customAmount).replace(/\D/g, ''), 10);
+      return Number.isFinite(n) ? n : 0;
+    }
+    return Number(selected.amount) || 0;
+  }, [selected, customAmount]);
 
   const loadMessages = useCallback(
     async (orderId) => {
@@ -113,11 +134,7 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
       setOrder(null);
       setPaymentUrls(null);
       setStep('form');
-      if (data.last_paid) {
-        setMessages(data.messages || []);
-      } else {
-        setMessages([]);
-      }
+      setMessages(data.last_paid ? data.messages || [] : []);
     })();
   }, [open, api]);
 
@@ -141,9 +158,8 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
     setLoading(true);
     const res = await api.cancelDonation(order.id, { discord_user_id: uid });
     setLoading(false);
-    if (res.success) {
-      startNewDonation();
-    } else setError(res.error || 'Не удалось отменить');
+    if (res.success) startNewDonation();
+    else setError(res.error || 'Не удалось отменить');
   };
 
   const checkPayment = async () => {
@@ -173,29 +189,31 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
     await loadMessages(lastPaid.id);
   };
 
-  const support = async () => {
+  const payWithYooMoney = async () => {
     setLoading(true);
     setError('');
     try {
       const uid = discordUserId || (await api.getDiscordUserId());
       if (!uid) {
-        setError('Не удалось привязать Discord. Ник Arma должен совпадать с Discord на сервере StarFront.');
+        setError('Привяжите Discord в настройках лаунчера.');
         return;
       }
       if (!selected) {
-        setError('Выберите услугу из листа пожертвований');
+        setError('Выберите услугу или пожертвование');
         return;
       }
-      if (paymentMethod === 'boosty' && (selected.yoomoney_only || selected.amount < boostyMin)) {
-        setError(`На Boosty минимальная сумма — ${boostyMin} ₽. Для теста 2 ₽ используйте ЮMoney.`);
+      const minAmount = selected.min_amount || 10;
+      if (payAmount < minAmount) {
+        setError(`Минимальная сумма — ${minAmount} ₽`);
         return;
       }
+
       const res = await api.createDonation({
         discord_user_id: uid,
-        amount_rub: selected.amount,
+        amount_rub: payAmount,
         tier_id: selected.id,
         item_title: selected.title,
-        payment_method: paymentMethod,
+        payment_method: 'yoomoney',
         player_name: profile?.display_name,
         player_profile: profile,
       });
@@ -212,15 +230,14 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
       const exact = res.exact_amount || res.payment_urls?.exact_amount;
       setStatus(
         exact
-          ? `Заказ создан. Переведите ровно ${exact} ₽ — комментарий не нужен.`
-          : `Заказ «${selected.title}» создан. Оплатите ${selected.amount} ₽.`
+          ? `Заказ создан. Переведите ровно ${exact} ₽ через ЮMoney — комментарий не нужен.`
+          : `Заказ «${selected.title}» создан. Оплатите ${payAmount} ₽ через ЮMoney.`
       );
-      const urls = res.payment_urls || {};
-      const url = paymentMethod === 'yoomoney' ? urls.yoomoney || urls.yoomoney_quickpay : urls.boosty;
+      const url = res.payment_urls?.yoomoney || res.payment_urls?.yoomoney_quickpay;
       if (url) await api.openUrl(url);
       setStep('waiting');
     } catch (e) {
-      setError(e.message || 'Ошибка сети — проверьте, что бот запущен');
+      setError(e.message || 'Ошибка сети');
     } finally {
       setLoading(false);
     }
@@ -230,7 +247,7 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
     if (!text.trim() || !order?.id) return;
     const uid = discordUserId || (await api.getDiscordUserId());
     if (!uid) {
-      setError('Discord не привязан — войдите на сервер StarFront с тем же ником');
+      setError('Discord не привязан');
       return;
     }
     setLoading(true);
@@ -247,34 +264,27 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
 
   if (!open) return null;
 
-  const boostyBlocked = (item) =>
-    paymentMethod === 'boosty' && (item.yoomoney_only || Number(item.amount) < boostyMin);
-
-  const renderItem = (item) => {
-    const blocked = boostyBlocked(item);
-    return (
+  const renderItem = (item) => (
     <button
       key={item.id}
       type="button"
-      className={`donate-tier ${selected?.id === item.id ? 'active' : ''} ${blocked ? 'donate-tier--disabled' : ''}`}
-      disabled={blocked}
-      onClick={() => !blocked && setSelected(item)}
+      className={`donate-tier ${selected?.id === item.id ? 'active' : ''}`}
+      onClick={() => {
+        setSelected(item);
+        if (item.custom_amount) setCustomAmount(String(item.amount || 100));
+      }}
     >
       <strong>{item.title}</strong>
-      <span>
-        {item.amount} ₽ · {item.rim_points || item.amount} RIM POINT
-      </span>
+      <span>{item.custom_amount ? 'Своя сумма · от 10 ₽' : `${item.amount} ₽`}</span>
       <small>{item.description}</small>
-      {blocked && <small className="donate-tier-note">На Boosty от {boostyMin} ₽ — выберите ЮMoney</small>}
     </button>
-    );
-  };
+  );
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <section className="modal-panel donate-modal" onClick={(e) => e.stopPropagation()}>
         <header className="modal-header">
-          <h2>Лист пожертвований</h2>
+          <h2>STAR POINT · Услуги</h2>
           <button type="button" className="modal-close" onClick={onClose}>
             ✕
           </button>
@@ -282,7 +292,7 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
 
         {step === 'form' && (
           <div className="modal-body">
-            <p className="block-hint">1 ₽ = 1 RIM POINT · выберите услугу из листа пожертвований</p>
+            <p className="block-hint">Оплата услуг — только через ЮMoney API. После оплаты откроется чат с администрацией.</p>
             {lastPaid && (
               <div className="donate-paid-banner">
                 <p className="block-hint">
@@ -293,49 +303,45 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
                 </button>
               </div>
             )}
-            {testItems.length > 0 && (
+
+            {studioItems.length > 0 && (
               <>
-                <h4 className="shop-section-title">Тест</h4>
-                <div className="donate-tiers">{testItems.map(renderItem)}</div>
+                <h4 className="shop-section-title">Услуги Студии</h4>
+                <div className="donate-tiers">{studioItems.map(renderItem)}</div>
               </>
             )}
-            {roles.length > 0 && (
+
+            {donateItems.length > 0 && (
               <>
-                <h4 className="shop-section-title">Роли</h4>
-                <div className="donate-tiers">{roles.map(renderItem)}</div>
+                <h4 className="shop-section-title">Пожертвование</h4>
+                <div className="donate-tiers">{donateItems.map(renderItem)}</div>
               </>
             )}
-            {extras.length > 0 && (
-              <>
-                <h4 className="shop-section-title">Доп. услуги</h4>
-                <div className="donate-tiers">{extras.map(renderItem)}</div>
-              </>
-            )}
-            <p className="block-hint">
-              Сумма: <strong>{selected ? `${selected.amount} ₽` : '—'}</strong>
-            </p>
-            <div className="pay-methods">
-              <label className={`pay-method ${paymentMethod === 'yoomoney' ? 'active' : ''}`}>
-                <input type="radio" checked={paymentMethod === 'yoomoney'} onChange={() => setPaymentMethod('yoomoney')} />
-                ЮMoney
-              </label>
-              <label className={`pay-method ${paymentMethod === 'boosty' ? 'active' : ''}`}>
+
+            {selected?.custom_amount && (
+              <label className="field">
+                <span>Сумма пожертвования (₽)</span>
                 <input
-                  type="radio"
-                  checked={paymentMethod === 'boosty'}
-                  onChange={() => {
-                    setPaymentMethod('boosty');
-                    if (selected && (selected.yoomoney_only || selected.amount < boostyMin)) {
-                      setSelected(null);
-                    }
-                  }}
+                  type="number"
+                  min={selected.min_amount || 10}
+                  step="1"
+                  value={customAmount}
+                  onChange={(e) => setCustomAmount(e.target.value)}
                 />
-                Boosty <span className="pay-method-hint">от {boostyMin} ₽</span>
               </label>
-            </div>
+            )}
+
+            <p className="block-hint">
+              К оплате: <strong>{selected ? `${payAmount} ₽` : '—'}</strong> · ЮMoney
+            </p>
+
+            <button type="button" className="btn-ghost-sm" onClick={() => api.openUrl(BOOSTY_URL)}>
+              Или пожертвовать на Boosty
+            </button>
+
             {error && <p className="form-error">{error}</p>}
-            <button type="button" className="btn-save" disabled={loading || !selected} onClick={support}>
-              {loading ? 'Отправка…' : 'Поддержать'}
+            <button type="button" className="btn-save" disabled={loading || !selected || payAmount < 1} onClick={payWithYooMoney}>
+              {loading ? 'Создание заказа…' : 'Оплатить через ЮMoney'}
             </button>
           </div>
         )}
@@ -358,17 +364,7 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
               )}
             </p>
             <p className="block-hint bot-hint">
-              {paymentMethod === 'boosty' ? (
-                <>
-                  На Boosty укажите сумму <strong>до копеек</strong> и в сообщении к донату —{' '}
-                  <strong>rim_order_{order?.id}</strong>. Бот проверяет донаты на Boosty автоматически (~30 сек).
-                </>
-              ) : (
-                <>
-                  Переведите ровно указанную сумму до копеек — комментарий не нужен. Другая сумма не засчитается.
-                  Система сверяет переводы через YooMoney API (шлюз на сервере, ~15–20 сек).
-                </>
-              )}
+              Переведите ровно указанную сумму до копеек — комментарий не нужен. Проверка через YooMoney API (~15–20 сек).
             </p>
             <div className="donate-wait-actions">
               <button type="button" className="btn-save" disabled={loading} onClick={checkPayment}>
@@ -379,20 +375,17 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
                 className="btn-ghost-sm"
                 onClick={() => {
                   const urls = paymentUrls || {};
-                  const url =
-                    paymentMethod === 'yoomoney'
-                      ? urls.yoomoney || urls.yoomoney_quickpay || `https://yoomoney.ru/to/4100117678086877/${order?.amount_rub}?label=rim_order_${order?.id}`
-                      : urls.boosty || `https://boosty.to/imagundi/donate?sum=${order?.amount_rub}&comment=rim_order_${order?.id}`;
-                  api.openUrl(url);
+                  const url = urls.yoomoney || urls.yoomoney_quickpay;
+                  if (url) api.openUrl(url);
                 }}
               >
-                Открыть оплату
+                Открыть ЮMoney
               </button>
               <button type="button" className="btn-ghost-sm" disabled={loading} onClick={cancelOrder}>
                 Отменить заказ
               </button>
               <button type="button" className="btn-ghost-sm" onClick={startNewDonation}>
-                К списку услуг
+                К услугам
               </button>
             </div>
             {error && <p className="form-error">{error}</p>}
@@ -404,14 +397,9 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
             <p className="form-success">
               Оплата получена · заказ #{order.id} · {order.item_title || order.tier_id}
             </p>
-            <p className="block-hint bot-hint">
-              Напишите администратору (ник, позывной, что купили). Роли Discord выдаются вручную — номер батальона
-              (CG / 104 / RS) в чате не активирует роль автоматически.
-            </p>
+            <p className="block-hint bot-hint">Напишите администратору детали заказа — ответ придёт сюда и в Discord.</p>
             <div className="chat-messages">
-              {messages.length === 0 && (
-                <p className="block-hint">Напишите администратору — ответ придёт сюда и в Discord.</p>
-              )}
+              {messages.length === 0 && <p className="block-hint">Напишите администратору.</p>}
               {messages.map((m) => (
                 <div key={m.id} className={`chat-msg chat-msg--${m.author_type}`}>
                   <span className="chat-author">{m.author_name || m.author_type}</span>
@@ -436,7 +424,7 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
                 Обновить чат
               </button>
               <button type="button" className="btn-save" onClick={startNewDonation}>
-                Новое пожертвование
+                Новый заказ
               </button>
             </div>
             {error && <p className="form-error">{error}</p>}

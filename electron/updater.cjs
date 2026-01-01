@@ -2,8 +2,9 @@ const https = require('https');
 const { URL } = require('url');
 
 const GITHUB_OWNER = 'AshcookieKing';
-const GITHUB_REPO = 'RimLauncher';
-const USER_AGENT = 'RimConflictLauncher';
+const GITHUB_REPO = 'StarFront';
+const USER_AGENT = 'StarFrontLauncher';
+const LAUNCHER_EXE_NAMES = [/^StarFrontLauncher\.exe$/i, /^RimConflictLauncher\.exe$/i];
 
 function fetchText(url, redirects = 0) {
   return new Promise((resolve, reject) => {
@@ -144,12 +145,11 @@ async function checkForUpdates(currentVersion) {
       return { updateAvailable: false, currentVersion, remoteVersion: remoteVersion || currentVersion };
     }
     const exeAsset =
-      (release.assets || []).find((a) => /^RimConflictLauncher\.exe$/i.test(a.name)) ||
-      (release.assets || []).find((a) => /^RimConflictLauncher.*\.exe$/i.test(a.name)) ||
+      (release.assets || []).find((a) => LAUNCHER_EXE_NAMES.some((re) => re.test(a.name))) ||
       (release.assets || []).find((a) => a.name.endsWith('.exe'));
     const zipAsset = (release.assets || []).find((a) => /\.zip$/i.test(a.name));
     const fileFromManifest = manifest?.files?.find((f) => /\.exe$/i.test(f.url));
-    const fileName = exeAsset?.name || fileFromManifest?.url || 'RimConflictLauncher.exe';
+    const fileName = exeAsset?.name || fileFromManifest?.url || 'StarFrontLauncher.exe';
     const sha512 =
       manifest?.files?.find((f) => f.url === fileName)?.sha512 ||
       manifest?.files?.find((f) => /\.exe$/i.test(f.url))?.sha512 ||

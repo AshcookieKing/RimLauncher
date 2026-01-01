@@ -1,8 +1,8 @@
 {
   "_comment": "Partner Center → ваше приложение → Управление продуктом → Идентификация продукта. Скопируйте в store.identity.json и подставьте свои значения.",
-  "identityName": "123456789012.RimConflictLauncher",
+  "identityName": "123456789012.StarFrontLauncher",
   "publisher": "CN=XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
-  "publisherDisplayName": "Ваше имя издателя",
-  "applicationId": "RimConflictLauncher",
-  "displayName": "Rim Conflict Launcher"
+  "publisherDisplayName": "StarFront",
+  "applicationId": "StarFrontLauncher",
+  "displayName": "StarFront Launcher"
 }

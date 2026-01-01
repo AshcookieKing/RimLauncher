@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const path = require('path');
 const fs = require('fs');
 
@@ -6,9 +7,13 @@ const SERVER_HOST = '109.248.4.45';
 const SERVER_PORT = 2302;
 const QUERY_PORT = 2303;
 const BOT_STATUS_URL = process.env.RIM_ONLINE_STATUS_URL || 'http://127.0.0.1:8791/api/online';
+const LAUNCHER_API_ONLINE_URL =
+  process.env.RIM_LAUNCHER_API_ONLINE_URL || 'http://109.248.4.174:5003/api/launcher/online';
 const BOT_HTTP_TIMEOUT_MS = 2000;
+const API_HTTP_TIMEOUT_MS = 8000;
 
 let cachedFetchServerData = null;
+let onlineStatusServerStarted = false;
 
 function findBotResourcesDir() {
   const dirs = [
@@ -34,9 +39,32 @@ function getBotFetchServerData() {
   }
 }
 
+function ensureOnlineStatusServer() {
+  if (onlineStatusServerStarted) return;
+  const candidates = [
+    path.join(process.resourcesPath || '', 'online-bot', 'online-status-server.js'),
+    path.join(__dirname, '..', 'bot-manager-python', 'resources', 'online-status-server.js'),
+  ];
+  for (const modPath of candidates) {
+    if (!fs.existsSync(modPath)) continue;
+    try {
+      const { startOnlineStatusServer } = require(modPath);
+      startOnlineStatusServer();
+      onlineStatusServerStarted = true;
+      return;
+    } catch (err) {
+      if (err.code !== 'EADDRINUSE') {
+        console.error('online-status-server:', err.message || err);
+      }
+    }
+  }
+  onlineStatusServerStarted = true;
+}
+
 function fetchJson(url, timeoutMs = BOT_HTTP_TIMEOUT_MS) {
   return new Promise((resolve) => {
-    const req = http.get(url, { timeout: timeoutMs }, (res) => {
+    const lib = url.startsWith('https') ? https : http;
+    const req = lib.get(url, { timeout: timeoutMs }, (res) => {
       let data = '';
       res.on('data', (chunk) => (data += chunk));
       res.on('end', () => {
@@ -78,6 +106,25 @@ function mapBotPayload(data, source) {
   };
 }
 
+function mapApiOnlinePayload(data) {
+  if (!data || typeof data !== 'object') return null;
+  const online = data.online && typeof data.online === 'object' ? data.online : data;
+  if (!online || typeof online !== 'object') return null;
+  return {
+    online: Number(online.online) || 0,
+    max_players: Number(online.max_players) || 0,
+    status: String(online.status || 'offline').toLowerCase() === 'online' ? 'online' : 'offline',
+    server_name: online.server_name || 'StarFront',
+    map: online.map || '',
+    server_ip: online.server_ip || SERVER_HOST,
+    server_port: Number(online.server_port) || SERVER_PORT,
+    query_port: QUERY_PORT,
+    players: Array.isArray(online.players) ? online.players : [],
+    source: 'launcher-api',
+    updated_at: Date.now(),
+  };
+}
+
 function offlinePayload(source = 'offline') {
   return {
     online: 0,
@@ -90,6 +137,24 @@ function offlinePayload(source = 'offline') {
     players: [],
     source,
   };
+}
+
+function pickBestOnlinePayload(candidates) {
+  const list = candidates.filter(Boolean);
+  if (!list.length) return offlinePayload('unavailable');
+
+  const online = list.filter((item) => item.status === 'online');
+  const pool = online.length ? online : list;
+
+  return pool.sort((a, b) => {
+    const score = (item) =>
+      (item.status === 'online' ? 1000 : 0) +
+      Number(item.online || 0) * 10 +
+      (item.source === 'online-bot-http' ? 5 : 0) +
+      (item.source === 'online-bot-module' ? 4 : 0) +
+      (item.source === 'launcher-api' ? 3 : 0);
+    return score(b) - score(a);
+  })[0];
 }
 
 async function queryViaOnlineBotHttp() {
@@ -109,19 +174,32 @@ async function queryViaBotModule() {
   }
 }
 
-async function resolveOnlineStatus() {
-  const fromHttp = await queryViaOnlineBotHttp();
-  if (fromHttp) return fromHttp;
-
-  const fromModule = await queryViaBotModule();
-  if (fromModule) return fromModule;
-
-  return offlinePayload('unavailable');
+async function queryViaLauncherApi() {
+  const data = await fetchJson(LAUNCHER_API_ONLINE_URL, API_HTTP_TIMEOUT_MS);
+  return mapApiOnlinePayload(data);
 }
 
-function mergeOnlinePayload(_apiOnline, localOnline) {
-  if (localOnline && typeof localOnline === 'object') return localOnline;
-  return offlinePayload('unavailable');
+async function resolveOnlineStatus() {
+  ensureOnlineStatusServer();
+
+  const [fromHttp, fromModule, fromApi] = await Promise.all([
+    queryViaOnlineBotHttp(),
+    queryViaBotModule(),
+    queryViaLauncherApi(),
+  ]);
+
+  return pickBestOnlinePayload([fromHttp, fromModule, fromApi]);
+}
+
+function mergeOnlinePayload(apiOnline, localOnline) {
+  const apiPayload =
+    apiOnline && typeof apiOnline === 'object'
+      ? {
+          ...apiOnline,
+          source: apiOnline.source || 'launcher-api-status',
+        }
+      : null;
+  return pickBestOnlinePayload([localOnline, apiPayload]);
 }
 
 module.exports = {
@@ -129,6 +207,8 @@ module.exports = {
   SERVER_PORT,
   QUERY_PORT,
   BOT_STATUS_URL,
+  LAUNCHER_API_ONLINE_URL,
+  ensureOnlineStatusServer,
   resolveOnlineStatus,
   mergeOnlinePayload,
   mapBotPayload,

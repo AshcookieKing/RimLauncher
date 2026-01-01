@@ -6,6 +6,7 @@ export default function TitleBar({
   onOpenNews,
   onOpenGuide,
   onOpenSupport,
+  onOpenRpRules,
   onOpenDonate,
 }) {
   return (
@@ -16,6 +17,9 @@ export default function TitleBar({
       <div className="title-actions">
         <button type="button" className="title-link title-link--support" onClick={onOpenSupport}>
           ПОДДЕРЖКА
+        </button>
+        <button type="button" className="title-link" onClick={onOpenRpRules}>
+          РП ПРАВИЛА
         </button>
         <button type="button" className="title-link" onClick={onOpenGuide}>
           ГАЙД
@@ -28,10 +32,17 @@ export default function TitleBar({
         </button>
       </div>
 
-      <button type="button" className="rim-points-badge rim-points-badge--click" onClick={onOpenDonate} title="Поддержать проект">
-        <span className="rp-label">RIM POINT</span>
+      <div
+        className="rim-points-badge rim-points-badge--click"
+        title="Услуги Студии и пожертвования"
+        role="button"
+        tabIndex={0}
+        onClick={onOpenDonate}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onOpenDonate?.()}
+      >
+        <span className="rp-label">STAR POINT</span>
         <span className="rp-value">{rimPoints ?? 0}</span>
-      </button>
+      </div>
 
       <div className="window-controls">
         <button type="button" className="win-btn" onClick={() => window.rimLauncher.minimize()} title="Свернуть">

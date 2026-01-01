@@ -6,7 +6,6 @@ import PlayerCard from './components/PlayerCard';
 import NewsModal from './components/NewsModal';
 import NewsToast from './components/NewsToast';
 import SettingsPanel from './components/SettingsPanel';
-import DonateModal from './components/DonateModal';
 import GuideModal from './components/GuideModal';
 import CalendarModal from './components/CalendarModal';
 import AnnouncementModal from './components/AnnouncementModal';
@@ -17,9 +16,12 @@ import DiscordAuthGate from './components/DiscordAuthGate';
 import PathSetupGate from './components/PathSetupGate';
 import NewbieGate from './components/NewbieGate';
 import UpdateModal from './components/UpdateModal';
+import DonateModal from './components/DonateModal';
 import LogoHolo from './components/LogoHolo';
+import { useEscapeClose } from './hooks/useEscapeClose';
 import './styles/app.css';
 
+const RP_RULES_URL = 'http://109.248.4.174:8090/';
 const api = window.rimLauncher;
 
 export default function App() {
@@ -30,10 +32,10 @@ export default function App() {
   const [launching, setLaunching] = useState(false);
   const [view, setView] = useState('home');
   const [newsOpen, setNewsOpen] = useState(false);
-  const [donateOpen, setDonateOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideTutorial, setGuideTutorial] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [donateOpen, setDonateOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [focusEvent, setFocusEvent] = useState(null);
@@ -263,25 +265,52 @@ export default function App() {
     }
   }, [guideTutorial, completeTutorial]);
 
-  useEffect(() => {
-    let cancelled = false;
-    const pollPendingPayment = async () => {
-      try {
-        const uid = await api.getDiscordUserId();
-        if (!uid || cancelled) return;
-        const data = await api.getActiveDonation(uid);
-        if (data.order?.status === 'pending') {
-          setDonateOpen(true);
-        }
-      } catch {}
-    };
-    pollPendingPayment();
-    const t = setInterval(pollPendingPayment, 60000);
-    return () => {
-      cancelled = true;
-      clearInterval(t);
-    };
-  }, []);
+  const closeTopOverlay = useCallback(() => {
+    if (donateOpen) {
+      setDonateOpen(false);
+      return;
+    }
+    if (leaveOpen) {
+      setLeaveOpen(false);
+      return;
+    }
+    if (supportOpen) {
+      setSupportOpen(false);
+      return;
+    }
+    if (guideOpen) {
+      setGuideOpen(false);
+      setGuideTutorial(false);
+      return;
+    }
+    if (newsOpen) {
+      setNewsOpen(false);
+      return;
+    }
+    if (calendarOpen) {
+      setCalendarOpen(false);
+      return;
+    }
+    if (announcementOpen) {
+      setAnnouncementOpen(false);
+      return;
+    }
+    if (view === 'settings') {
+      setView('home');
+    }
+  }, [donateOpen, leaveOpen, supportOpen, guideOpen, newsOpen, calendarOpen, announcementOpen, view]);
+
+  useEscapeClose(
+    donateOpen ||
+      leaveOpen ||
+      supportOpen ||
+      guideOpen ||
+      newsOpen ||
+      calendarOpen ||
+      announcementOpen ||
+      view === 'settings',
+    closeTopOverlay
+  );
 
   if (!settings || discordAuthed === null || !updateChecked) {
     return (
@@ -346,13 +375,12 @@ export default function App() {
   const profile = discord?.profile || {};
   const nextEvent = discord?.next_event || events?.next_event;
   const announcement = discord?.announcement;
-  const donationShop = discord?.donation_shop || discord?.donation_tiers;
-  const boostyMinDonationRub = discord?.boosty_min_donation_rub;
   const supportOnline = discord?.support_online;
   const unitApplication = discord?.unit_application;
   const units = discord?.units;
   const battalion = discord?.battalion;
   const leaveRequest = discord?.leave_request;
+  const donationShop = discord?.donation_shop || discord?.donation_tiers;
 
   return (
     <div
@@ -376,6 +404,7 @@ export default function App() {
           setGuideOpen(true);
         }}
         onOpenSupport={() => setSupportOpen(true)}
+        onOpenRpRules={() => api.openUrl(RP_RULES_URL)}
         onOpenDonate={() => setDonateOpen(true)}
       />
 
@@ -428,18 +457,21 @@ export default function App() {
 
       <LaunchDock progress={progress.percent} message={progress.message} launching={launching} onStart={handleStart} />
 
-      <NewsModal open={newsOpen} news={discord?.news || []} onClose={() => setNewsOpen(false)} onRefresh={refreshDiscord} />
+      <NewsModal
+        open={newsOpen}
+        news={discord?.news || []}
+        tiktokUrl={discord?.tiktok_url}
+        onClose={() => setNewsOpen(false)}
+        onRefresh={refreshDiscord}
+      />
 
       <DonateModal
         open={donateOpen}
         onClose={() => setDonateOpen(false)}
         profile={profile}
         shop={donationShop}
-        boostyMinRub={boostyMinDonationRub}
         api={api}
-        onChatOpen={() => {
-          refreshDiscord();
-        }}
+        onChatOpen={() => refreshDiscord()}
       />
 
       <GuideModal

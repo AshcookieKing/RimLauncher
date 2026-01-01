@@ -179,16 +179,16 @@ function startPlaytimeTracker() {
       if (Notification.isSupported()) {
         const n = new Notification({
           title: 'StarFront',
-          body: `+${result.added || 1} RIM POINT за час в Arma 3 · баланс: ${result.rim_points ?? '?'}`,
+          body: `+${result.added || 1} STAR POINT за час в Arma 3 · баланс: ${result.rim_points ?? '?'}`,
         });
         n.show();
       }
     },
     onClaimFailed: (result) => {
       if (!Notification.isSupported()) return;
-      let body = 'Не удалось начислить RIM POINT за время в игре.';
+      let body = 'Не удалось начислить STAR POINT за время в игре.';
       if (result.error === 'not_linked') {
-        body = 'Привяжите Discord в лаунчере — без этого RIM POINT за игру не начисляются.';
+        body = 'Привяжите Discord в лаунчере — без этого STAR POINT за игру не начисляются.';
       } else if (result.error === 'endpoint_missing' || result.statusCode === 404) {
         body = 'Rim API: начисление за игру недоступно — перезапустите text_bot на сервере.';
       } else if (result.error) {
@@ -407,11 +407,17 @@ function startOnlinePolling() {
 async function bootstrapDiscordData() {
   try {
     const localOnline = await resolveOnlineStatus(SERVER_HOST, SERVER_PORT);
+    let directNews = [];
+    try {
+      const { fetchNewsDirect } = require('./discord-direct.cjs');
+      directNews = await fetchNewsDirect();
+    } catch {}
+
     cachedDiscordData = enrichDiscordData({
       success: true,
       online: localOnline,
       profile: {},
-      news: [],
+      news: directNews,
     });
     mainWindow?.webContents.send('discord-data', cachedDiscordData);
     startOnlinePolling();
@@ -427,7 +433,7 @@ async function bootstrapDiscordData() {
     const statusPromise = discord.fetchLauncherStatus(discordUserId, apiBase(), playerName);
     const full = await Promise.race([
       statusPromise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 12000)),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 9000)),
     ]).catch(() => null);
 
     if (full) {
@@ -745,6 +751,29 @@ ipcMain.handle('subscribe-mod', async (_, workshopId) => {
 
 ipcMain.handle('open-url', (_, url) => shell.openExternal(url));
 
+ipcMain.handle('open-rp-rules-window', () => {
+  const devUrl = process.env.VITE_DEV_SERVER_URL;
+  const rulesWindow = new BrowserWindow({
+    width: 980,
+    height: 760,
+    minWidth: 720,
+    minHeight: 520,
+    backgroundColor: '#020810',
+    title: 'РП правила — StarFront',
+    autoHideMenuBar: true,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+  if (devUrl) {
+    rulesWindow.loadURL(`${devUrl.replace(/\/$/, '')}/rp-rules.html`);
+  } else {
+    rulesWindow.loadFile(path.join(__dirname, '..', 'dist', 'rp-rules.html'));
+  }
+  return { ok: true };
+});
+
 function discordDeepLink(url) {
   const raw = String(url || '');
   const channelMatch = raw.match(/discord\.com\/channels\/(\d+)\/(\d+)/i);
@@ -895,7 +924,7 @@ ipcMain.handle('download-update', async (event, updateInfo) => {
   if (!url) return { ok: false, error: 'Нет ссылки на загрузку' };
 
   const safeVersion = String(updateInfo?.remoteVersion || 'update').replace(/[^\w.-]+/g, '_');
-  const tempPath = path.join(app.getPath('temp'), `RimConflictLauncher-${safeVersion}.exe`);
+  const tempPath = path.join(app.getPath('temp'), `StarFrontLauncher-${safeVersion}.exe`);
 
   try {
     if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);

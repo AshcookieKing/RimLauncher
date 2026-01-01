@@ -52,8 +52,8 @@ jobs:
       - name: Create ZIP archive
         shell: pwsh
         run: |
-          $zip = "release/RimConflictLauncher-$env:VERSION.zip"
-          Compress-Archive -Force -Path release/RimConflictLauncher.exe -DestinationPath $zip
+          $zip = "release/StarFrontLauncher-$env:VERSION.zip"
+          Compress-Archive -Force -Path release/StarFrontLauncher.exe -DestinationPath $zip
           "ZIP_PATH=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Generate latest.yml
@@ -78,14 +78,14 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ env.VERSION }}
-          name: Rim Conflict Launcher ${{ env.VERSION }}
+          name: StarFront Launcher ${{ env.VERSION }}
           body_path: release_notes.md
           draft: false
           prerelease: false
           make_latest: true
           files: |
-            release/RimConflictLauncher.exe
-            release/RimConflictLauncher-${{ env.VERSION }}.zip
+            release/StarFrontLauncher.exe
+            release/StarFrontLauncher-${{ env.VERSION }}.zip
             release/latest.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
