@@ -9,7 +9,9 @@
 
 ## Скачать
 
-Сборки — в **[Releases](https://github.com/AshcookieKing/RimLauncher/releases)**.
+**Прямая ссылка:** [Rim Conflict Launcher 1.1.0-alpha](https://github.com/AshcookieKing/RimLauncher/releases/tag/v1.1.0-alpha)
+
+Все сборки — в **[Releases](https://github.com/AshcookieKing/RimLauncher/releases)**.
 
 | Файл | Описание |
 |------|----------|
