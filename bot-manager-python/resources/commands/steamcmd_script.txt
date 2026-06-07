@@ -1,0 +1,39 @@
+@ShutdownOnFailedCommand 0
+@NoPromptForPassword 1
+force_install_dir "C:\a3server"
+login dimiitriy Dimon_456
+workshop_download_item 107410 2837881513
+workshop_download_item 107410 3692186362
+workshop_download_item 107410 3528128565
+workshop_download_item 107410 463939057
+workshop_download_item 107410 3655268221
+workshop_download_item 107410 3557327888
+workshop_download_item 107410 2058554822
+workshop_download_item 107410 2215872933
+workshop_download_item 107410 623475643
+workshop_download_item 107410 3591787041
+workshop_download_item 107410 583496184
+workshop_download_item 107410 2743998048
+workshop_download_item 107410 450814997
+workshop_download_item 107410 2939850574
+workshop_download_item 107410 3708557907
+workshop_download_item 107410 3044134487
+workshop_download_item 107410 2291129343
+workshop_download_item 107410 2155291956
+workshop_download_item 107410 2320596778
+workshop_download_item 107410 2162749089
+workshop_download_item 107410 2323185592
+workshop_download_item 107410 3032131959
+workshop_download_item 107410 1940589429
+workshop_download_item 107410 769440155
+workshop_download_item 107410 3558108681
+workshop_download_item 107410 2797232351
+workshop_download_item 107410 939686262
+workshop_download_item 107410 3539476763
+workshop_download_item 107410 894678801
+workshop_download_item 107410 3103330607
+workshop_download_item 107410 3327438842
+workshop_download_item 107410 2853193856
+workshop_download_item 107410 2061309401
+workshop_download_item 107410 3279145545
+quit

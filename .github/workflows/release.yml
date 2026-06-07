@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (example: 1.1.0-alpha)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set version from tag or input
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}"
+          } else {
+            $version = "${{ github.ref_name }}" -replace '^v',''
+          }
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          npm version $version --no-git-tag-version --allow-same-version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prepare online-bot config for build
+        shell: pwsh
+        run: |
+          Copy-Item -Force bot-manager-python/resources/config.example.json bot-manager-python/resources/config.json
+
+      - name: Build portable EXE
+        run: npm run pack
+
+      - name: Create ZIP archive
+        shell: pwsh
+        run: |
+          $zip = "release/RimConflictLauncher-$env:VERSION.zip"
+          Compress-Archive -Force -Path release/RimConflictLauncher.exe -DestinationPath $zip
+          "ZIP_PATH=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Generate latest.yml
+        run: node scripts/generate-latest-yml.mjs
+
+      - name: Read changelog section
+        id: changelog
+        shell: pwsh
+        run: |
+          $section = ""
+          $lines = Get-Content CHANGELOG.md
+          $capture = $false
+          foreach ($line in $lines) {
+            if ($line -match '^##\s+' + [regex]::Escape($env:VERSION)) { $capture = $true; continue }
+            if ($capture -and $line -match '^##\s+') { break }
+            if ($capture) { $section += "$line`n" }
+          }
+          if (-not $section.Trim()) { $section = "Release $env:VERSION" }
+          $section | Out-File -FilePath release_notes.md -Encoding utf8
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Rim Conflict Launcher ${{ env.VERSION }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          make_latest: true
+          files: |
+            release/RimConflictLauncher.exe
+            release/RimConflictLauncher-${{ env.VERSION }}.zip
+            release/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

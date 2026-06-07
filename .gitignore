@@ -1,4 +1,20 @@
-*
+node_modules/
+dist/
+release/
+win-unpacked/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*
 
-!.gitignore
-!README.md
+# Local / sensitive
+build/store.identity.json
+RimConflictLauncher.exe
+_git-public.bat
+_git-push-readme.bat
+
+# Bot manager tree (local tooling) — only bundled resources are tracked
+bot-manager-python/*
+!bot-manager-python/resources/
+bot-manager-python/resources/config.json

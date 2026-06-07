@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arma 3 Server Control</title>
+    <style>
+        body {
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, #0d0d0d, #1a1a1a);
+            color: #e0e0e0;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(20, 20, 20, 0.8);
+            border: 2px solid #ff00ff;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+        }
+
+        .auth-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .auth-status img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            border: 2px solid #ff00ff;
+            box-shadow: 0 0 10px #ff00ff;
+        }
+
+        .auth-status span {
+            font-size: 1.2em;
+            color: #00ffcc;
+            text-shadow: 0 0 5px #00ffcc;
+        }
+
+        .neon-button {
+            padding: 12px 24px;
+            margin: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #fff;
+            background: #ff00ff;
+            border: 2px solid #ff00ff;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+            text-transform: uppercase;
+        }
+
+        .neon-button:hover {
+            background: #cc00cc;
+            box-shadow: 0 0 15px #ff00ff, 0 0 30px #ff00ff;
+            transform: scale(1.05);
+        }
+
+        .neon-button:active {
+            background: #990099;
+            box-shadow: 0 0 5px #ff00ff;
+        }
+
+        .category-select {
+            margin-bottom: 20px;
+        }
+
+        .category-select select {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 1px solid #00ffcc;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: 'Orbitron', sans-serif;
+            box-shadow: 0 0 5px #00ffcc;
+            font-size: 1.1em;
+        }
+
+        .category-select select:focus {
+            outline: none;
+            box-shadow: 0 0 10px #00ffcc;
+        }
+
+        .category {
+            display: none;
+        }
+
+        .category.active {
+            display: block;
+        }
+
+        .form-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .form-group label {
+            color: #00ffcc;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 1px solid #00ffcc;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 0 5px #00ffcc;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            box-shadow: 0 0 10px #00ffcc;
+        }
+
+        #actions, #missions, #zeuses {
+            margin-top: 20px;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 0;
+            list-style: none;
+        }
+
+        #actions li, #missions li, #zeuses li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #00ffcc;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            box-shadow: 0 0 10px #00ffcc;
+        }
+
+        #actions li span, #missions li, #zeuses li {
+            flex: 1;
+            text-align: left;
+        }
+
+        #actions li .action-id {
+            color: #ff00ff;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        #actions li .action-user {
+            color: #00ffcc;
+        }
+
+        #actions li .action-time {
+            color: #e0e0e0;
+        }
+
+        #actions li .action-type {
+            color: #ff5555;
+        }
+
+        .error {
+            color: #ff5555;
+            text-shadow: 0 0 5px #ff5555;
+            margin-top: 10px;
+            font-size: 1em;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .neon-button {
+                padding: 10px 20px;
+                font-size: 1em;
+            }
+
+            .container {
+                padding: 15px;
+            }
+
+            #actions li, #missions li, #zeuses li {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Arma 3 Server Control Panel</h1>
+        <div class="auth-status" id="authStatus">
+            <span id="authText">Не авторизован</span>
+        </div>
+        <button id="loginBtn" class="neon-button" onclick="login()">Login with Discord</button>
+        <button id="logoutBtn" class="neon-button" style="display: none;" onclick="logout()">Logout</button>
+        <div class="category-select">
+            <select id="categorySelect" onchange="showCategory()">
+                <option value="Управление Сервером">Управление Сервером</option>
+                <option value="Управление Миссией">Управление Миссиями</option>
+                <option value="Управление Зевсам">Управление Зевсами</option>
+            </select>
+        </div>
+        <div id="controls">
+            <div id="Управление Сервером" class="category active">
+                <h2 style="color: #00ffcc; text-shadow: 0 0 5px #00ffcc;">Управление Сервером</h2>
+                <button class="neon-button" onclick="sendCommand('start')">Запустить Сервер</button>
+                <button class="neon-button" onclick="sendCommand('restart')">Перезапустить Сервер</button>
+                <button class="neon-button" onclick="sendCommand('stop')">Остановить Сервер</button>
+            </div>
+            <div id="Управление Миссией" class="category">
+                <h2 style="color: #00ffcc; text-shadow: 0 0 5px #00ffcc;">Управление Миссией</h2>
+                <div class="form-group">
+                    <label for="presetFile">Загрузить прессет (.html or .json):</label>
+                    <input type="file" id="presetFile" accept=".html,.json">
+                    <button class="neon-button" onclick="uploadPreset()">Загрузить прессет</button>
+                </div>
+                <button class="neon-button" onclick="listMissions()">Список Миссий</button>
+                <ul id="missions"></ul>
+                <div class="form-group">
+                    <label for="missionFile">Load Mission (.pbo or .zip):</label>
+                    <input type="file" id="missionFile" accept=".pbo,.zip">
+                    <button class="neon-button" onclick="loadMission()">Загрузить Миссии</button>
+                </div>
+                <div class="form-group">
+                    <label for="missionSelect">Скачать Миссию:</label>
+                    <select id="missionSelect">
+                        <option value="">Выберете миссию</option>
+                    </select>
+                    <button class="neon-button" onclick="downloadMission()">Скачать Миссию</button>
+                </div>
+            </div>
+            <div id="Управление Зевсам" class="category">
+                <h2 style="color: #00ffcc; text-shadow: 0 0 5px #00ffcc;">Управление Зевсами</h2>
+                <div class="form-group">
+                    <label for="zeusSteamID">SteamID (17 символов):</label>
+                    <input type="text" id="zeusSteamID" placeholder="Введите SteamID" pattern="\d{17}" title="SteamID должен содержать 17 цифр">
+                    <label for="zeusDiscordPing">Discord Ping (<@ID>):</label>
+                    <input type="text" id="zeusDiscordPing" placeholder="Введите Дискорд Айди">
+                    <label for="zeusRank">Должность:</label>
+                    <input type="text" id="zeusRank" placeholder="Введите должность">
+                    <button class="neon-button" onclick="addZeus()">Добавить Зевса</button>
+                </div>
+                <div class="form-group">
+                    <label for="removeZeusSteamID">SteamID для снятия:</label>
+                    <input type="text" id="removeZeusSteamID" placeholder="Введите SteamID" pattern="\d{17}" title="SteamID должен содержать 17 цифр">
+                    <button class="neon-button" onclick="removeZeus()">Удалить Зевса</button>
+                </div>
+                <button class="neon-button" onclick="listZeus()">Список Зевсов</button>
+                <ul id="zeuses"></ul>
+            </div>
+        </div>
+        <h2 style="color: #00ffcc; text-shadow: 0 0 5px #00ffcc;">Прошлые действия</h2>
+        <ul id="actions"></ul>
+        <p id="error" class="error"></p>
+    </div>
+
+    <script>
+        const API_URL = 'http://109.248.4.45:3000/api';
+        let token = localStorage.getItem('discord_token');
+
+        function showCategory() {
+            const select = document.getElementById('categorySelect');
+            const categories = document.querySelectorAll('.category');
+            categories.forEach(cat => cat.classList.remove('active'));
+            document.getElementById(select.value).classList.add('active');
+        }
+
+        async function checkAuthStatus() {
+            const authText = document.getElementById('authText');
+            const loginBtn = document.getElementById('loginBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const controls = document.getElementById('controls');
+
+            if (token) {
+                try {
+                    const response = await fetch(`${API_URL}/user`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                        throw new Error(`HTTP ${response.status}: ${errorData.error || 'Failed to fetch user data'}`);
+                    }
+                    const user = await response.json();
+                    authText.innerHTML = `
+                        <img src="${user.avatar || 'https://cdn.discordapp.com/embed/avatars/0.png'}" alt="Avatar">
+                        <span>Авторизован: ${user.username}#${user.discriminator}</span>
+                    `;
+                    loginBtn.style.display = 'none';
+                    logoutBtn.style.display = 'inline-block';
+                    controls.style.display = 'block';
+                    loadActions();
+                    loadMissions();
+                } catch (error) {
+                    console.error('Error fetching user:', error);
+                    if (error.message.includes('401')) {
+                        authText.textContent = 'Токен недействителен или устарел';
+                        console.log('Токен недействителен, удаляем из localStorage');
+                    } else if (error.message.includes('403')) {
+                        authText.textContent = 'Недостаточно прав доступа';
+                        console.log('Пользователь не имеет необходимых прав');
+                    } else {
+                        authText.textContent = 'Ошибка авторизации: ' + error.message;
+                    }
+                    localStorage.removeItem('discord_token');
+                    token = null;
+                    loginBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none';
+                    controls.style.display = 'none';
+                }
+            } else {
+                authText.textContent = 'Не авторизован';
+                loginBtn.style.display = 'inline-block';
+                logoutBtn.style.display = 'none';
+                controls.style.display = 'none';
+            }
+        }
+
+        function login() {
+            const clientId = '1408755329809776645';
+            const redirectUri = encodeURIComponent('http://109.248.4.45:3000/auth/callback');
+            window.location.href = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=identify%20guilds`;
+        }
+
+        function logout() {
+            localStorage.removeItem('discord_token');
+            token = null;
+            checkAuthStatus();
+            document.getElementById('error').textContent = 'Вы вышли из системы';
+        }
+
+        async function sendCommand(action) {
+            try {
+                const response = await fetch(`${API_URL}/${action}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`HTTP ${response.status}: ${errorData.error || 'Unknown error'}`);
+                }
+                const data = await response.json();
+                document.getElementById('error').textContent = data.message || data.error;
+                loadActions();
+            } catch (error) {
+                console.error('Fetch error in sendCommand:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+                if (error.message.includes('401')) {
+                    logout();
+                }
+            }
+        }
+
+        async function uploadPreset() {
+            const fileInput = document.getElementById('presetFile');
+            if (!fileInput.files[0]) {
+                document.getElementById('error').textContent = 'Please select a file';
+                return;
+            }
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const response = await fetch('https://api.upload.io/v2/accounts/32a4zN6/uploads/binary', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer public_12a1yhH4V9iP6q5TH2jS82z1tY2' },
+                    body: formData
+                });
+                const data = await response.json();
+                if (!data.fileUrl) throw new Error('File upload failed');
+                const apiResponse = await fetch(`${API_URL}/uploadpreset`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fileUrl: data.fileUrl, fileName: file.name })
+                });
+                const result = await apiResponse.json();
+                if (!apiResponse.ok) throw new Error(result.error || 'Upload failed');
+                document.getElementById('error').textContent = result.message;
+                loadActions();
+            } catch (error) {
+                console.error('Upload preset error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function listMissions() {
+            try {
+                const response = await fetch(`${API_URL}/listmissions`, {
+                    headers: { 'Authorization': token }
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`HTTP ${response.status}: ${errorData.error || 'Unknown error'}`);
+                }
+                const data = await response.json();
+                const missionsList = document.getElementById('missions');
+                missionsList.innerHTML = '';
+                if (!data.missions || data.missions.length === 0) {
+                    missionsList.innerHTML = '<li>No missions available</li>';
+                } else {
+                    data.missions.forEach(mission => {
+                        const li = document.createElement('li');
+                        li.textContent = mission;
+                        missionsList.appendChild(li);
+                    });
+                }
+                loadActions();
+            } catch (error) {
+                console.error('Fetch missions error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+                if (error.message.includes('401')) {
+                    logout();
+                }
+            }
+        }
+
+        async function loadMission() {
+            const fileInput = document.getElementById('missionFile');
+            if (!fileInput.files[0]) {
+                document.getElementById('error').textContent = 'Please select a file';
+                return;
+            }
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                const response = await fetch('https://api.upload.io/v2/accounts/32a4zN6/uploads/binary', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer public_12a1yhH4V9iP6q5TH2jS82z1tY2' },
+                    body: formData
+                });
+                const data = await response.json();
+                if (!data.fileUrl) throw new Error('File upload failed');
+                const apiResponse = await fetch(`${API_URL}/loadmission`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fileUrl: data.fileUrl, fileName: file.name })
+                });
+                const result = await apiResponse.json();
+                if (!apiResponse.ok) throw new Error(result.error || 'Upload failed');
+                document.getElementById('error').textContent = result.message;
+                loadActions();
+            } catch (error) {
+                console.error('Load mission error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function loadMissions() {
+            try {
+                const response = await fetch(`${API_URL}/missions`, {
+                    headers: { 'Authorization': token }
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to fetch missions');
+                }
+                const data = await response.json();
+                const select = document.getElementById('missionSelect');
+                select.innerHTML = '<option value="">Select a mission</option>';
+                data.missions.forEach(mission => {
+                    const option = document.createElement('option');
+                    option.value = mission;
+                    option.textContent = mission;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Load missions error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function downloadMission() {
+            const missionSelect = document.getElementById('missionSelect');
+            const mission = missionSelect.value;
+            if (!mission) {
+                document.getElementById('error').textContent = 'Please select a mission';
+                return;
+            }
+            try {
+                const response = await fetch(`${API_URL}/downloadmission`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ mission })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Download failed');
+                }
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${mission}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                document.getElementById('error').textContent = `Mission ${mission} downloaded successfully`;
+                loadActions();
+            } catch (error) {
+                console.error('Download mission error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function addZeus() {
+            const steamID = document.getElementById('zeusSteamID').value;
+            const discordPing = document.getElementById('zeusDiscordPing').value;
+            const rank = document.getElementById('zeusRank').value;
+            if (!steamID || !discordPing || !rank) {
+                document.getElementById('error').textContent = 'Please fill all fields';
+                return;
+            }
+            if (!/^\d{17}$/.test(steamID)) {
+                document.getElementById('error').textContent = 'SteamID должен содержать 17 цифр';
+                return;
+            }
+            try {
+                const response = await fetch(`${API_URL}/addzeus`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ steamID, discordPing, rank })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Add Zeus failed');
+                }
+                const data = await response.json();
+                document.getElementById('error').textContent = data.message;
+                loadActions();
+            } catch (error) {
+                console.error('Add Zeus error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function listZeus() {
+            try {
+                const response = await fetch(`${API_URL}/listzeus`, {
+                    headers: { 'Authorization': token }
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`HTTP ${response.status}: ${errorData.error || 'Unknown error'}`);
+                }
+                const data = await response.json();
+                const zeusesList = document.getElementById('zeuses');
+                zeusesList.innerHTML = '';
+                
+                if (!data.zeuses || data.zeuses.length === 0) {
+                    zeusesList.innerHTML = '<li>No Zeus entries available</li>';
+                } else {
+                    data.zeuses.forEach(zeus => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <div><strong>SteamID:</strong> ${zeus.steam_id || 'N/A'}</div>
+                            <div><strong>Discord:</strong> ${zeus.UserName || 'N/A'}</div>
+                            <div><strong>Rank:</strong> ${zeus.rank || 'N/A'}</div>
+                        `;
+                        zeusesList.appendChild(li);
+                    });
+                }
+                loadActions();
+            } catch (error) {
+                console.error('Fetch Zeus error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+                if (error.message.includes('401')) {
+                    logout();
+                }
+            }
+        }
+
+        async function removeZeus() {
+            const steamID = document.getElementById('removeZeusSteamID').value;
+            if (!steamID) {
+                document.getElementById('error').textContent = 'Please enter a SteamID';
+                return;
+            }
+            if (!/^\d{17}$/.test(steamID)) {
+                document.getElementById('error').textContent = 'SteamID должен содержать 17 цифр';
+                return;
+            }
+            try {
+                const response = await fetch(`${API_URL}/removezeus`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ steamID })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Remove Zeus failed');
+                }
+                const data = await response.json();
+                document.getElementById('error').textContent = data.message;
+                loadActions();
+            } catch (error) {
+                console.error('Remove Zeus error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function setupDatabaseAccess() {
+            const botIP = document.getElementById('botIP').value;
+            if (!botIP) {
+                document.getElementById('error').textContent = 'Please enter a Bot IP';
+                return;
+            }
+            try {
+                const response = await fetch(`${API_URL}/setupdatabaseaccess`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ botIP })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Setup database access failed');
+                }
+                const data = await response.json();
+                document.getElementById('error').textContent = data.message;
+                loadActions();
+            } catch (error) {
+                console.error('Setup database access error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+            }
+        }
+
+        async function loadActions() {
+            try {
+                const response = await fetch(`${API_URL}/actions`, {
+                    headers: { 'Authorization': token }
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`HTTP ${response.status}: ${errorData.error || 'Unknown error'}`);
+                }
+                const data = await response.json();
+                const actionsList = document.getElementById('actions');
+                actionsList.innerHTML = '';
+                if (!data.actions || data.actions.length === 0) {
+                    actionsList.innerHTML = '<li>No actions available</li>';
+                } else {
+                    data.actions.forEach(action => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <span class="action-id">${action.id}.</span>
+                            <span class="action-user">${action.user}</span>
+                            <span class="action-time">${action.time}</span>
+                            <span class="action-type">${action.action}</span>
+                        `;
+                        actionsList.appendChild(li);
+                    });
+                }
+            } catch (error) {
+                console.error('Fetch actions error:', error);
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+                if (error.message.includes('401')) {
+                    logout();
+                }
+            }
+        }
+
+        checkAuthStatus();
+    </script>
+</body>
+</html>
+

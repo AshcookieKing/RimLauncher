@@ -1,0 +1,8 @@
+{
+  "SERVER_ID": "1473748088844976242",
+  "webhook_url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+  "clientId": "YOUR_DISCORD_APPLICATION_CLIENT_ID",
+  "arma_server_ip": "109.248.4.45",
+  "arma_server_port": "2303",
+  "discord_panel_channel_id": "1473748090598195343"
+}

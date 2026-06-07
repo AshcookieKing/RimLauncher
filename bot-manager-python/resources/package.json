@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "archiver": "^7.0.1",
+    "cheerio": "^1.0.0",
+    "child_process": "^1.0.2",
+    "cors": "^2.8.5",
+    "discord.js": "^14.21.0",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "fs-extra": "^11.3.0",
+    "geoip-lite": "^1.4.10",
+    "mysql2": "^3.14.1",
+    "node-fetch": "^2.7.0",
+    "node-ssh": "^13.2.1",
+    "sqlite3": "^5.1.7",
+    "ssh2": "^1.16.0"
+  }
+}
