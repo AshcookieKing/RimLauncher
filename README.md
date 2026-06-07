@@ -1,6 +1,6 @@
 # Rim Conflict Launcher
 
-**Версия:** 1.1.1-alpha  
+**Версия:** 1.1.3-alpha  
 **Платформа:** Windows 10/11 (x64)
 
 Десктопный лаунчер для тактического RP-сервера **Star Wars — Rim Conflict** (Arma 3).
@@ -31,8 +31,9 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 1. Скачайте `RimConflictLauncher.exe` по ссылке выше или со страницы [Releases](https://github.com/AshcookieKing/RimLauncher/releases).
 2. Положите в любую папку и запустите.
 3. Войдите через **Discord** (аккаунт на сервере Rim Conflict).
-4. В **Настройках** выберите профиль Arma 3.
-5. Нажмите **СТАРТ** — лаунчер проверит моды, откроет TeamSpeak и запустит игру.
+4. Ответьте на вопрос **«Вы новичок?»** — для новичков откроется канал 327-го батальона.
+5. В **Настройках** выберите профиль Arma 3.
+6. Нажмите **СТАРТ** — лаунчер проверит моды, откроет TeamSpeak и запустит игру.
 
 ### Нужно заранее
 
@@ -65,6 +66,15 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 ---
 
 ## Changelog
+
+### 1.1.3-alpha
+
+- Полноэкранное окно обновления
+- Исправлен показ «Вы новичок?» для новых игроков
+
+### 1.1.2-alpha
+
+- Тест автообновления
 
 ### 1.1.1-alpha
 
