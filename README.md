@@ -1,6 +1,6 @@
 # Rim Conflict Launcher
 
-**Версия:** 1.1.3-alpha  
+**Версия:** 1.1.4-alpha  
 **Платформа:** Windows 10/11 (x64)
 
 Десктопный лаунчер для тактического RP-сервера **Star Wars — Rim Conflict** (Arma 3).
@@ -66,6 +66,10 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 ---
 
 ## Changelog
+
+### 1.1.4-alpha
+
+- Обновлён пресет модов (07.06.2026)
 
 ### 1.1.3-alpha
 
