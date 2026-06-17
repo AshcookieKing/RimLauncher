@@ -1,0 +1,61 @@
+:root {
+  --cyan: #00e5ff;
+  --cyan-dim: #0080ff;
+  --blue-glow: rgba(0, 180, 255, 0.45);
+  --panel: rgba(4, 18, 36, 0.72);
+  --panel-border: rgba(0, 229, 255, 0.35);
+  --text: #e8f4ff;
+  --text-dim: #7eb8d4;
+  --danger: #ff6b4a;
+  --warn: #ffb347;
+  --ok: #3dffa8;
+  --font-display: 'Orbitron', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #020810;
+  color: var(--text);
+  font-family: var(--font-ui);
+  user-select: none;
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+  color-scheme: dark;
+}
+
+input,
+select,
+textarea {
+  background-color: rgba(0, 18, 36, 0.95);
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+}
+
+input::placeholder {
+  color: rgba(126, 184, 212, 0.45);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--cyan-dim);
+  border-radius: 3px;
+}

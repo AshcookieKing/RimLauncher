@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "name": "Auto Deploy on Save",
+  "description": "При сохранении SQF, Python или HTML файлов — автоматически копирует их в нужные папки и перезапускает map_api",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.sqf",
+      "**/*.py",
+      "**/map.html"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Файл был изменён. Выполни автодеплой без вопросов:\n\n1. Если изменён *.sqf файл из arma/ — скопируй его в C:\\a3server\\mpmissions\\Rim_Conflict_base.Kapaulio\\scripts\\mapLive\\ (сохраняя структуру подпапок)\n2. Если изменён app.py или любой *.py — скопируй в C:\\rim_online_bot\\bot-manager-python\\map_api\\\n3. Если изменён templates/map.html — он уже в нужном месте (workspace = map_api)\n4. Перезапусти map_api: найди процессы python с CommandLine like *map_api*, убей их, запусти Start-Process \"cmd.exe\" \"/c C:\\rim_online_bot\\bot-manager-python\\run_map_api.cmd\"\n5. Подожди 4 секунды, проверь что порт 5050 слушает\n\nДелай всё автоматически, без вопросов."
+  }
+}

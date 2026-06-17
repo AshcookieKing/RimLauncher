@@ -1,0 +1,21 @@
+;; ВСТАВКА В fn_mapLiveTick.sqf (или аналог) — блок записи arma_map_objects / статики
+;; Проблема: getMarkerPos даёт [x,z] в 2D; position без высоты — путаница с pos_y (высота) и pos_z (север).
+;; Решение: всегда getPosATL _obj и разбор count _p как в mission_patch_markerPos_sqf.txt
+
+private _p = getPosATL _obj;  ;; или getPosASL — главное: тройка [восток, высота, север]
+private _pc = count _p;
+private _mx = 0;
+private _my = 0;
+private _mz = 0;
+if (_pc >= 3) then {
+    _mx = _p select 0;  ;; east
+    _my = _p select 1;  ;; height → колонка pos_y
+    _mz = _p select 2;  ;; north → колонка pos_z
+} else {
+    if (_pc >= 2) then {
+        _mx = _p select 0;
+        _mz = _p select 1;  ;; плоскость карты без высоты
+        _my = 0;
+    };
+};
+;; INSERT/REPLACE: pos_x=_mx, pos_y=_my, pos_z=_mz

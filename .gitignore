@@ -1,4 +1,43 @@
-*
+node_modules/
+dist/
+release/
+win-unpacked/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*
 
-!.gitignore
-!README.md
+# Secrets / local identity
+build/store.identity.json
+bot-manager-python/resources/config.json
+bot-manager-python/config.json
+
+# Build artifacts
+RimConflictLauncher.exe
+link_Rim_Conflict_to_Arma3.exe
+build/link_Rim_Conflict_to_Arma3/
+*.spec.bak
+
+# Local git helpers (public README repo)
+_git-public.bat
+_git-push-readme.bat
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Bot manager heavy local data
+bot-manager-python/steamcmd/
+bot-manager-python/dumps/
+bot-manager-python/.venv/
+bot-manager-python/build/
+bot-manager-python/dist/
+bot-manager-python/BotManager.exe
+
+# IDE
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Verify After Task",
+  "description": "После завершения каждой задачи агента — проверяет что map_api работает и данные в БД корректны",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Агент завершил работу. Проверь без вопросов:\n\n1. Запущен ли map_api (порт 5050): netstat -ano | findstr \":5050\" | findstr \"LISTENING\"\n2. Если НЕ запущен — запусти: Start-Process \"cmd.exe\" \"/c C:\\rim_online_bot\\bot-manager-python\\run_map_api.cmd\"\n3. Проверь последние координаты в БД: python check_coords_db.py\n4. Если есть ошибки — исправь автоматически\n\nТолько если всё OK — ничего не делай."
+  }
+}

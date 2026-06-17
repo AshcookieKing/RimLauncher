@@ -1,0 +1,38 @@
+@ShutdownOnFailedCommand 1
+@NoPromptForPassword 1
+login for_ziliron_server Ziliron_Noriliz135
+force_install_dir "C:\a3server"
+workshop_download_item 107410 2837881513
+workshop_download_item 107410 450814997
+workshop_download_item 107410 2291129343
+workshop_download_item 107410 2323185592
+workshop_download_item 107410 1940589429
+workshop_download_item 107410 463939057
+workshop_download_item 107410 2058554822
+workshop_download_item 107410 2215872933
+workshop_download_item 107410 623475643
+workshop_download_item 107410 2061309401
+workshop_download_item 107410 3327438842
+workshop_download_item 107410 3570572979
+workshop_download_item 107410 3655268221
+workshop_download_item 107410 2155291956
+workshop_download_item 107410 3558108681
+workshop_download_item 107410 3539476763
+workshop_download_item 107410 583496184
+workshop_download_item 107410 3044134487
+workshop_download_item 107410 3591787041
+workshop_download_item 107410 3620961988
+workshop_download_item 107410 2743998048
+workshop_download_item 107410 3528128565
+workshop_download_item 107410 769440155
+workshop_download_item 107410 894678801
+workshop_download_item 107410 2320596778
+workshop_download_item 107410 2939850574
+workshop_download_item 107410 3557327888
+workshop_download_item 107410 3051419351
+workshop_download_item 107410 3103330607
+workshop_download_item 107410 3032131959
+workshop_download_item 107410 2162749089
+workshop_download_item 107410 3279145545
+workshop_download_item 107410 2853193856
+quit

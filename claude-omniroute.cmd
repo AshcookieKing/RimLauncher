@@ -1,0 +1,10 @@
+@echo off
+set "ANTHROPIC_BASE_URL=http://127.0.0.1:20128"
+set "ANTHROPIC_API_KEY=sk-c3819e697a06dda5-8f457d-5be312a0"
+set "ANTHROPIC_AUTH_TOKEN=sk-c3819e697a06dda5-8f457d-5be312a0"
+set "ANTHROPIC_MODEL=kr/claude-sonnet-4.5"
+set "ANTHROPIC_DEFAULT_SONNET_MODEL=kr/claude-sonnet-4.5"
+set "ANTHROPIC_DEFAULT_HAIKU_MODEL=kr/claude-haiku-4.5"
+set "NO_PROXY=127.0.0.1,localhost"
+set "CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1"
+"C:\Users\mashi\AppData\Roaming\npm\claude.cmd" %*

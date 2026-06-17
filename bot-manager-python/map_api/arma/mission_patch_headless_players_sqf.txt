@@ -1,0 +1,11 @@
+;; ВСТАВКА в fn_mapLiveTick.sqf — блок forEach allPlayers: не писать Headless (HC, HC3, …) в БД.
+;; Замените тело «if (!isNull _u && {alive _u}) then {» на вариант с проверкой _nm regexMatch:
+
+    if (!isNull _u && {alive _u}) then {
+        private _nm = toLower name _u;
+        if (_nm regexMatch "^(hc\d*|headless.*)$") then { } else {
+        private _p = getPosATL _u;
+        ... (как было) ...
+        _pp pushBack format [ ... ];
+        };
+    };

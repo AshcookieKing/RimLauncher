@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Rim — RCON (BattlEye)</title>
+  <style>
+    :root {
+      --bg: #080a0d;
+      --panel: #0f1218;
+      --border: #252b38;
+      --text: #e6e9ef;
+      --muted: #8b93a8;
+      --accent: #3d8bfd;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { color: var(--accent); }
+    header {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 12px 18px; border-bottom: 1px solid var(--border); background: var(--panel);
+    }
+    h1 { margin: 0; font-size: 1rem; font-weight: 600; }
+    .meta { font-size: 12px; color: var(--muted); max-width: 520px; line-height: 1.45; }
+    main { padding: 16px 18px 32px; max-width: 960px; margin: 0 auto; }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input[type="password"], textarea {
+      width: 100%; background: #141922; border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 10px 12px; font-size: 13px;
+    }
+    textarea { min-height: 120px; font-family: ui-monospace, Consolas, monospace; resize: vertical; }
+    button {
+      margin-top: 12px; padding: 10px 18px; border-radius: 8px; border: 1px solid #2ea043;
+      background: #238636; color: #fff; font-weight: 600; cursor: pointer; font-size: 13px;
+    }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    button.secondary { background: var(--panel); border-color: var(--border); color: var(--text); }
+    pre {
+      margin-top: 16px; padding: 14px; background: #050608; border: 1px solid var(--border);
+      border-radius: 8px; white-space: pre-wrap; word-break: break-word; font-size: 12px;
+      color: #c8e0ff; max-height: 55vh; overflow-y: auto;
+    }
+    .warn { color: #f59e0b; font-size: 12px; margin-top: 10px; }
+    .err { color: #f87171; font-size: 13px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>BattlEye RCON</h1>
+      <div class="meta">
+        Отдельный UDP-порт (см. <code>RConPort</code> в <code>BEServer_x64.cfg</code>), не HTTP к map_api.
+        Пароль RCON только в переменной окружения <code>MAP_RCON_PASSWORD</code> на машине, где крутится Flask.
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <a href="/">← Тактическая карта</a>
+    </div>
+  </header>
+  <main>
+    {% if not rcon_enabled %}
+    <p class="warn">Консоль отключена: задайте в окружении <code>MAP_RCON_ENABLED=1</code> и перезапустите map_api.</p>
+    {% elif not admin_secret_configured %}
+    <p class="warn">Задайте <code>MAP_API_ADMIN_SECRET</code> — без него endpoint RCON не принимает запросы (защита от произвольных команд).</p>
+    {% elif not berconpy_ok %}
+    <p class="err">Пакет <code>berconpy</code> не установлен. Выполните: <code>pip install berconpy</code> (Python 3.10+).</p>
+    {% else %}
+    <p class="meta" style="margin-bottom:14px">Цель: <strong>{{ rcon_host }}:{{ rcon_port }}</strong> · команды как в <a href="https://www.battleye.com/support/documentation/" target="_blank" rel="noopener">документации BattlEye</a> и <a href="https://community.bistudio.com/wiki/Multiplayer_Server_Commands" target="_blank" rel="noopener">серверных командах Arma</a>.</p>
+    <p class="meta" style="margin-bottom:14px">
+      <strong>Проверка без карты:</strong> в PowerShell на машине с map_api:
+      <code style="display:block;margin-top:6px;padding:8px;background:#050608;border-radius:6px;font-size:11px;word-break:break-all">curl.exe -s http://127.0.0.1:5050/health</code>
+      В ответе смотрите <code>rcon</code>: <code>enabled</code>, <code>password_configured</code>, <code>berconpy_installed</code>, <code>admin_secret_configured</code>.
+      Реальный вызов RCON (подставьте свой <code>X-Map-Admin-Key</code>):
+      {% raw %}<pre style="margin:8px 0 0;padding:10px;background:#050608;border-radius:6px;font-size:11px;overflow-x:auto">curl.exe -s -X POST http://127.0.0.1:5050/api/map/rcon -H "Content-Type: application/json" -H "X-Map-Admin-Key: ВАШ_СЕКРЕТ" -d "{\"command\":\"players\"}"</pre>{% endraw %}
+    </p>
+    <label for="adminKey">X-Map-Admin-Key (тот же, что <code>MAP_API_ADMIN_SECRET</code>)</label>
+    <input type="password" id="adminKey" autocomplete="off" placeholder="Админ-ключ map_api"/>
+    <p class="meta" style="margin:8px 0 0">
+      <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="rememberKey"/> Запомнить ключ только в этом браузере (localStorage)
+      </label>
+    </p>
+    <label for="cmd" style="margin-top:14px">Команда RCON (одна строка)</label>
+    <textarea id="cmd" placeholder="Например: players&#10;или: #exec serverCommand &quot;#logout&quot;"></textarea>
+    <div>
+      <button type="button" id="btnSend">Отправить</button>
+      <button type="button" class="secondary" id="btnEx" title="Пример">players</button>
+    </div>
+    <div id="err" class="err" style="display:none"></div>
+    <pre id="out" style="display:none"></pre>
+    {% endif %}
+  </main>
+  <script>
+    (function () {
+      var STORAGE_KEY = 'map_api_x_map_admin_key';
+      var btn = document.getElementById('btnSend');
+      var btnEx = document.getElementById('btnEx');
+      if (!btn) return;
+      var out = document.getElementById('out');
+      var err = document.getElementById('err');
+      var keyEl = document.getElementById('adminKey');
+      var rememberEl = document.getElementById('rememberKey');
+      try {
+        var saved = localStorage.getItem(STORAGE_KEY);
+        if (saved && keyEl) keyEl.value = saved;
+        if (rememberEl) rememberEl.checked = !!saved;
+      } catch (e) {}
+      function showErr(t) {
+        err.style.display = t ? 'block' : 'none';
+        err.textContent = t || '';
+      }
+      btnEx && (btnEx.onclick = function () {
+        document.getElementById('cmd').value = 'players';
+      });
+      btn.onclick = async function () {
+        var cmdEl = document.getElementById('cmd');
+        var key = keyEl ? String(keyEl.value || '').trim() : '';
+        var cmd = cmdEl ? String(cmdEl.value || '').trim() : '';
+        showErr('');
+        out.style.display = 'none';
+        if (!key) { showErr('Введите X-Map-Admin-Key.'); return; }
+        if (!cmd) { showErr('Введите команду.'); return; }
+        try {
+          if (rememberEl && rememberEl.checked) localStorage.setItem(STORAGE_KEY, key);
+          else localStorage.removeItem(STORAGE_KEY);
+        } catch (e) {}
+        btn.disabled = true;
+        try {
+          var r = await fetch('/api/map/rcon', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Map-Admin-Key': key },
+            body: JSON.stringify({ command: cmd })
+          });
+          var j = await r.json().catch(function () { return {}; });
+          if (!r.ok) throw new Error(j.error || r.status);
+          out.textContent = j.output != null ? String(j.output) : JSON.stringify(j, null, 2);
+          out.style.display = 'block';
+        } catch (e) {
+          showErr(String(e));
+        } finally {
+          btn.disabled = false;
+        }
+      };
+    })();
+  </script>
+</body>
+</html>

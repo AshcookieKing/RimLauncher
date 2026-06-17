@@ -1,0 +1,40 @@
+;; ВСТАВКА В fn_mapLiveTick.sqf — заменить блок forEach allMapMarkers (маркеры карты)
+;; Причина: getMarkerPos часто даёт [x, z] без высоты; старый код писал pos_z = (_p select 2) → 0 → всё на нижней кромке веб-карты.
+
+{
+    if (_n >= _maxMrk) exitWith {};
+    private _m = _x;
+    private _p = getMarkerPos _m;
+    private _pc = count _p;
+    private _mx = 0;
+    private _my = 0;
+    private _mz = 0;
+    if (_pc >= 3) then {
+        _mx = _p select 0;
+        _my = _p select 1;
+        _mz = _p select 2;
+    } else {
+        if (_pc >= 2) then {
+            _mx = _p select 0;
+            _mz = _p select 1;
+            _my = 0;
+        };
+    };
+    if (!(_mx == 0 && _mz == 0)) then {
+        private _txt = [markerText _m] call _esc;
+        private _typ = [markerType _m] call _esc;
+        private _col = [markerColor _m] call _esc;
+        _mm pushBack format [
+            "(%1,'%2','%3','%4','%5',%6,%7,%8)",
+            _serverId,
+            [_m] call _esc,
+            _typ,
+            _txt,
+            _col,
+            _mx,
+            _my,
+            _mz
+        ];
+        _n = _n + 1;
+    };
+} forEach allMapMarkers;

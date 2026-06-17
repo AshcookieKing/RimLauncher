@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Авторизация</title>
+</head>
+<body>
+    <p>Обработка авторизации...</p>
+    <script>
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const token = params.get('access_token');
+        const error = params.get('error');
+        if (error) {
+            document.body.innerHTML = `<p>Ошибка авторизации: ${error}. Попробуйте снова.</p>`;
+            console.error('Ошибка OAuth:', error);
+        } else if (token) {
+            localStorage.setItem('discord_token', token);
+            window.location.href = '/';
+        } else {
+            document.body.innerHTML = '<p>Ошибка авторизации: токен не получен. Попробуйте снова.</p>';
+            console.error('Токен не получен в callback');
+        }
+    </script>
+</body>
+</html>

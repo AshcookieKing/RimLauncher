@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>recon_bot · панель</title>
+  <style>
+    :root { --bg:#0f172a; --card:#1e293b; --muted:#94a3b8; --text:#f8fafc; --accent:#f97316; --err:#ef4444; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: ui-sans-serif, system-ui, Segoe UI, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; padding:24px; }
+    h1 { font-size:1.25rem; font-weight:700; margin:0 0 8px; }
+    p.sub { color:var(--muted); margin:0 0 20px; font-size:14px; }
+    .grid { display:grid; gap:16px; max-width:920px; }
+    .card { background:var(--card); border-radius:12px; padding:16px 18px; border:1px solid #334155; }
+    label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    input[type="password"], input[type="text"] {
+      width:100%; max-width:440px; padding:10px 12px; border-radius:8px; border:1px solid #475569;
+      background:#0f172a; color:var(--text); font-family:inherit;
+    }
+    button {
+      cursor:pointer; border:none; border-radius:10px; padding:10px 18px; font-weight:600; font-size:14px;
+      background:var(--accent); color:#0f172a; margin-right:8px; margin-top:8px;
+    }
+    button.secondary { background:#475569; color:var(--text); }
+    button.danger { background:var(--err); color:#fff; }
+    pre.log {
+      margin:12px 0 0; padding:12px; border-radius:8px; background:#0f172a; border:1px solid #334155;
+      font-size:11px; line-height:1.45; overflow:auto; max-height:280px; white-space:pre-wrap; word-break:break-all;
+    }
+    #statusMsg { margin-top:12px; font-size:13px; color:var(--muted); }
+    #statusMsg.err { color:var(--err); }
+    #statusMsg.ok { color:#34d399; }
+    dl.meta { display:grid; grid-template-columns:auto 1fr; gap:6px 16px; font-size:13px; margin:12px 0 0; }
+    dl.meta dt { color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="grid">
+    <div class="card">
+      <h1>recon_bot — статус и перезапуск</h1>
+      <p class="sub">Ключ задаётся в <code>RECON_PANEL_SECRET</code> в <code>recon_bot/.env</code>. После перезапуска процесс стартует в новом окне CMD (Windows).</p>
+      <label for="panelKey">Ключ панели</label>
+      <input type="password" id="panelKey" placeholder="RECON_PANEL_SECRET" autocomplete="off">
+      <div>
+        <button type="button" id="btnRefresh">Обновить статус</button>
+        <button type="button" id="btnRestart" class="danger">Перезапустить бота</button>
+      </div>
+      <div id="statusMsg"></div>
+      <dl class="meta" id="meta"></dl>
+      <label style="margin-top:16px">Хвост лога Arma (если задан путь в .env)</label>
+      <pre class="log" id="armaTail">—</pre>
+    </div>
+  </div>
+  <script>
+    const KEY_STORAGE = 'recon_panel_secret';
+    const inp = document.getElementById('panelKey');
+    const meta = document.getElementById('meta');
+    const armaTail = document.getElementById('armaTail');
+    const statusMsg = document.getElementById('statusMsg');
+    try { inp.value = sessionStorage.getItem(KEY_STORAGE) || ''; } catch (e) {}
+
+    function setMsg(text, cls) {
+      statusMsg.textContent = text || '';
+      statusMsg.className = cls || '';
+    }
+    function headersAuth() {
+      const k = String(inp.value || '').trim();
+      try { sessionStorage.setItem(KEY_STORAGE, k); } catch (e2) {}
+      const h = { 'Accept': 'application/json' };
+      if (k) h['X-Recon-Panel-Key'] = k;
+      return h;
+    }
+    async function refresh() {
+      setMsg('Загрузка…', '');
+      meta.innerHTML = '';
+      try {
+        const r = await fetch('/api/recon/panel/status', { headers: headersAuth() });
+        const j = await r.json().catch(function () { return {}; });
+        if (!r.ok) {
+          setMsg(j.error || ('HTTP ' + r.status), 'err');
+          armaTail.textContent = j.arma_log_tail || '—';
+          if (j.pid != null) {
+            meta.innerHTML = '<dt>PID</dt><dd>' + j.pid + '</dd>'
+              + '<dt>Время работы (с)</dt><dd>' + (j.uptime_sec != null ? j.uptime_sec : '—') + '</dd>'
+              + '<dt>Панель</dt><dd>' + (j.panel_secret_configured === false ? 'задайте RECON_PANEL_SECRET' : 'неверный ключ') + '</dd>';
+          }
+          return;
+        }
+        setMsg(j.panel_secret_configured ? '' : 'Внимание: RECON_PANEL_SECRET не задан — перезапуск отключён.', j.panel_secret_configured ? '' : 'err');
+        const rows = [
+          ['PID', j.pid],
+          ['Время работы (с)', j.uptime_sec],
+          ['Discord token', j.discord_token_set],
+          ['Канал разведки', j.channel_id],
+          ['Канал приказов', j.order_channel_id],
+          ['Мост map_api', j.bridge_secret_set],
+          ['Готовность', j.ready_ok],
+          ['Перезапуск', j.restart_configured ? 'настроен' : 'нет run_recon_bot.cmd']
+        ];
+        meta.innerHTML = rows.map(function (kv) {
+          return '<dt>' + kv[0] + '</dt><dd>' + String(kv[1]) + '</dd>';
+        }).join('');
+        armaTail.textContent = j.arma_log_tail || '—';
+      } catch (e) {
+        setMsg(String(e), 'err');
+      }
+    }
+    document.getElementById('btnRefresh').onclick = refresh;
+    document.getElementById('btnRestart').onclick = async function () {
+      if (!confirm('Остановить текущий recon_bot и запустить снова через run_recon_bot.cmd?')) return;
+      setMsg('Отправляю перезапуск…', '');
+      try {
+        const r = await fetch('/api/recon/service/restart', { method: 'POST', headers: headersAuth() });
+        const j = await r.json().catch(function () { return {}; });
+        if (!r.ok) {
+          setMsg(j.error || ('HTTP ' + r.status), 'err');
+          return;
+        }
+        setMsg(j.message || 'Перезапуск запланирован — это окно процесс завершит через несколько секунд.', 'ok');
+      } catch (e) {
+        setMsg(String(e), 'err');
+      }
+    };
+    refresh();
+  </script>
+</body>
+</html>

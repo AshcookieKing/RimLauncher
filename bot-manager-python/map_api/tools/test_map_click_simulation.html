@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Map Click Coordinates</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://jetelain.github.io/Arma3Map/maps/kapaulio.js"></script>
+    <style>
+        body { margin: 0; padding: 20px; font-family: monospace; }
+        #map { height: 600px; width: 100%; border: 2px solid #333; }
+        #info { margin-top: 20px; padding: 10px; background: #f0f0f0; }
+        .coord { color: #c00; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h2>Тест координат клика на карте Kapaulio</h2>
+    <div id="map"></div>
+    <div id="info">
+        <p>Кликните на карте чтобы увидеть координаты</p>
+    </div>
+
+    <script>
+        const MAP_SIZE = 20500;
+        const mapInfos = (typeof Arma3Map !== 'undefined' && Arma3Map.Maps && Arma3Map.Maps['kapaulio'])
+            ? Arma3Map.Maps['kapaulio'] : null;
+        
+        let map, armaToLatLng, latLngToArma;
+        
+        if (mapInfos) {
+            console.log('Using Arma3Map tiles for Kapaulio');
+            console.log('Map info:', mapInfos);
+            
+            map = L.map('map', {
+                crs: mapInfos.CRS,
+                minZoom: mapInfos.minZoom,
+                maxZoom: mapInfos.maxZoom,
+                zoomControl: true,
+                attributionControl: false
+            });
+            
+            L.tileLayer('https://jetelain.github.io/Arma3Map' + mapInfos.tilePattern, {
+                attribution: '',
+                tileSize: mapInfos.tileSize,
+                maxZoom: mapInfos.maxZoom,
+                maxNativeZoom: mapInfos.maxZoom
+            }).addTo(map);
+            
+            armaToLatLng = function (x, z) { return L.latLng(z, x); };
+            latLngToArma = function (ll) { return { pos_x: ll.lng, pos_z: ll.lat }; };
+            
+            const bounds = L.latLngBounds(L.latLng(0, 0), L.latLng(MAP_SIZE, MAP_SIZE));
+            map.fitBounds(bounds);
+        } else {
+            console.log('Using Simple CRS (no Arma3Map tiles)');
+            
+            map = L.map('map', {
+                crs: L.CRS.Simple,
+                minZoom: -3,
+                maxZoom: 4,
+                zoomControl: true,
+                attributionControl: false
+            });
+            
+            armaToLatLng = function (x, z) { return L.latLng(MAP_SIZE - z, x); };
+            latLngToArma = function (ll) { return { pos_x: ll.lng, pos_z: MAP_SIZE - ll.lat }; };
+            
+            const bounds = L.latLngBounds(L.latLng(0, 0), L.latLng(MAP_SIZE, MAP_SIZE));
+            map.fitBounds(bounds);
+        }
+        
+        // Add click handler
+        map.on('click', function(e) {
+            const armaCoords = latLngToArma(e.latlng);
+            const info = document.getElementById('info');
+            info.innerHTML = `
+                <h3>Клик на карте:</h3>
+                <p><strong>Leaflet LatLng:</strong> lat=<span class="coord">${e.latlng.lat.toFixed(2)}</span>, lng=<span class="coord">${e.latlng.lng.toFixed(2)}</span></p>
+                <p><strong>Arma Coordinates:</strong> pos_x=<span class="coord">${armaCoords.pos_x.toFixed(2)}</span> (east), pos_z=<span class="coord">${armaCoords.pos_z.toFixed(2)}</span> (north)</p>
+                <p><strong>Payload будет:</strong> <code>${Math.round(armaCoords.pos_x)}|0|${Math.round(armaCoords.pos_z)}|route=...</code></p>
+                <hr>
+                <p><strong>Ожидаемая позиция в игре:</strong></p>
+                <ul>
+                    <li>X (восток): ${Math.round(armaCoords.pos_x)}</li>
+                    <li>Y (высота): 0 (на земле)</li>
+                    <li>Z (север): ${Math.round(armaCoords.pos_z)}</li>
+                </ul>
+                ${armaCoords.pos_x > 1000 && armaCoords.pos_z > 1000 
+                    ? '<p style="color: green;">✓ Координаты выглядят правильно</p>' 
+                    : '<p style="color: red;">✗ Координаты подозрительные - может быть внизу карты</p>'}
+            `;
+            
+            // Add marker
+            L.marker(e.latlng).addTo(map)
+                .bindPopup(`Arma: [${Math.round(armaCoords.pos_x)}, 0, ${Math.round(armaCoords.pos_z)}]`)
+                .openPopup();
+        });
+        
+        // Add center marker for reference
+        const centerArma = { pos_x: 10250, pos_z: 10250 };
+        const centerLL = armaToLatLng(centerArma.pos_x, centerArma.pos_z);
+        L.marker(centerLL, { 
+            icon: L.divIcon({ 
+                className: 'center-marker',
+                html: '<div style="background: red; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            })
+        }).addTo(map)
+            .bindPopup('Центр карты<br>Arma: [10250, 0, 10250]');
+    </script>
+</body>
+</html>
