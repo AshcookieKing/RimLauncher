@@ -1,3 +1,5 @@
+import LogoHolo from './LogoHolo';
+
 export default function TitleBar({
   rimPoints,
   onOpenSettings,
@@ -8,7 +10,7 @@ export default function TitleBar({
 }) {
   return (
     <header className="title-bar">
-      <img src="./assets/logo.png" alt="StarFront" className="title-logo" />
+      <LogoHolo size="md" />
       <span className="title-text">STARFRONT</span>
 
       <div className="title-actions">

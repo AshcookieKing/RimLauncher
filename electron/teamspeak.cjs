@@ -6,7 +6,7 @@ const os = require('os');
 
 const TS_SERVER = '185.104.249.127';
 const TS_PORT = 10026;
-const TS_PASSWORD = 'rimconflict';
+const TS_PASSWORD = 'StarFront';
 
 const TS3_CLIENT_PATHS = [
   path.join(process.env.ProgramFiles || 'C:\\Program Files', 'TeamSpeak 3 Client', 'ts3client_win64.exe'),

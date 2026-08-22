@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import LogoHolo from './LogoHolo';
 
 function AuthGateBackground() {
   return (
@@ -116,7 +117,7 @@ export default function PathSetupGate({ api, settings, onComplete }) {
       <AuthGateBackground />
       <div className="auth-gate-card path-setup-card">
         <header className="auth-gate-header">
-          <img src="./assets/logo.png" alt="" className="auth-gate-logo-sm" />
+          <LogoHolo size="sm" />
           <span>Настройка путей Arma 3</span>
         </header>
 

@@ -406,7 +406,7 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
             </p>
             <p className="block-hint bot-hint">
               Напишите администратору (ник, позывной, что купили). Роли Discord выдаются вручную — номер батальона
-              (282 и т.д.) в чате не активирует роль автоматически.
+              (CG / 104 / RS) в чате не активирует роль автоматически.
             </p>
             <div className="chat-messages">
               {messages.length === 0 && (

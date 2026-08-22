@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import LogoHolo from './LogoHolo';
 
 function AuthGateBackground() {
   return (
@@ -67,7 +68,7 @@ export default function DiscordAuthGate({ api, onAuthenticated }) {
       <div className="auth-gate-overlay">
         <AuthGateBackground />
         <div className="auth-gate-card auth-gate-card--loading">
-          <img src="./assets/logo.png" alt="" className="auth-gate-logo" />
+          <LogoHolo size="lg" />
           <div className="loader-ring" />
         </div>
       </div>
@@ -79,7 +80,7 @@ export default function DiscordAuthGate({ api, onAuthenticated }) {
       <AuthGateBackground />
       <div className="auth-gate-card auth-gate-card--minimal">
         <header className="auth-gate-header">
-          <img src="./assets/logo.png" alt="" className="auth-gate-logo-sm" />
+          <LogoHolo size="sm" />
           <span>StarFront Launcher</span>
         </header>
         {error && <p className="form-error auth-gate-error">{error}</p>}

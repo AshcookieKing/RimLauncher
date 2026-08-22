@@ -1,6 +1,6 @@
 # StarFront Launcher
 
-**Версия:** 1.2.0-alpha  
+**Версия:** 1.2.1-alpha  
 **Платформа:** Windows 10/11 (x64)
 
 Десктопный лаунчер для тактического RP-сервера **StarFront** (Arma 3 — Clone Wars).
@@ -66,6 +66,14 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 ---
 
 ## Changelog
+
+### 1.2.1-alpha
+
+- Логотип StarFront с голографическим эффектом
+- Затемнение баннера сверху и снизу
+- Новый пресет модов SF4
+- TeamSpeak пароль: StarFront
+- Подразделения: CG, 104‑й, RS
 
 ### 1.2.0-alpha
 

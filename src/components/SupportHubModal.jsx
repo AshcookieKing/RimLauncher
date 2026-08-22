@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 
 const UNITS_FALLBACK = [
   { id: 'test', label: '🧪 Тест' },
-  { id: '282', label: '282' },
-  { id: '327', label: '327' },
-  { id: '346', label: '346' },
+  { id: 'cg', label: 'CG (Ударная гвардия)' },
+  { id: '104', label: '104‑й батальон' },
+  { id: 'rs', label: 'RS' },
 ];
 
 const UNIT_APP_ID_KEY = 'rim_unit_app_id';
@@ -568,7 +568,8 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
                     setMode('unit-form');
                   }}
                 >
-                  {u.label}
+                  <strong>{u.label}</strong>
+                  {u.discord_tag ? <span className="unit-tag">{u.discord_tag}</span> : null}
                 </button>
               ))}
             </div>

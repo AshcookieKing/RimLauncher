@@ -17,6 +17,7 @@ import DiscordAuthGate from './components/DiscordAuthGate';
 import PathSetupGate from './components/PathSetupGate';
 import NewbieGate from './components/NewbieGate';
 import UpdateModal from './components/UpdateModal';
+import LogoHolo from './components/LogoHolo';
 import './styles/app.css';
 
 const api = window.rimLauncher;
@@ -285,7 +286,7 @@ export default function App() {
   if (!settings || discordAuthed === null || !updateChecked) {
     return (
       <div className="loading-screen">
-        <img src="./assets/logo.png" alt="" className="loading-logo" />
+        <LogoHolo size="lg" />
         <div className="loader-ring" />
         <span>Инициализация…</span>
       </div>

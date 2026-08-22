@@ -1,7 +1,5 @@
 import { useState } from 'react';
-
-export const NEWBIE_BATTALION_CHANNEL_URL =
-  'https://discord.com/channels/1496874607364411558/1505892289380094013';
+import LogoHolo from './LogoHolo';
 
 function AuthGateBackground() {
   return (
@@ -22,7 +20,8 @@ export default function NewbieGate({ api, onComplete }) {
     setBusy(true);
     try {
       if (isNewbie) {
-        await api.openDiscordInvite?.(NEWBIE_BATTALION_CHANNEL_URL);
+        // Общий Discord сервера — без привязки к конкретному батальону
+        await api.openDiscordInvite?.('https://discord.com/channels/1496874607364411558');
       }
       const saved = await api.saveSettings({ newbiePromptComplete: true });
       onComplete?.(saved);
@@ -38,12 +37,12 @@ export default function NewbieGate({ api, onComplete }) {
       <AuthGateBackground />
       <div className="auth-gate-card auth-gate-card--minimal newbie-gate-card">
         <header className="auth-gate-header">
-          <img src="./assets/logo.png" alt="" className="auth-gate-logo-sm" />
-          <span>327-й батальон</span>
+          <LogoHolo size="sm" />
+          <span>StarFront</span>
         </header>
         <p className="auth-gate-lead">Вы новичок?</p>
         <p className="auth-gate-hint">
-          Если да — откроем канал для новичков в Discord батальона.
+          Если да — откроем Discord сервера. Подразделения: CG, 104‑й, RS.
         </p>
         <div className="newbie-gate-actions">
           <button type="button" className="auth-gate-btn newbie-gate-btn-yes" disabled={busy} onClick={() => answer(true)}>

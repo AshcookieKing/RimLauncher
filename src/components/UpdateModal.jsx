@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import LogoHolo from './LogoHolo';
 
 const api = window.rimLauncher;
 
@@ -69,7 +70,7 @@ export default function UpdateModal({ update, onDismiss }) {
       <AuthGateBackground />
       <section className="auth-gate-card update-modal" onClick={(e) => e.stopPropagation()}>
         <header className="auth-gate-header">
-          <img src="./assets/logo.png" alt="" className="auth-gate-logo-sm" />
+          <LogoHolo size="sm" />
           <span>Обновление лаунчера</span>
         </header>
         <div className="update-modal__body">
