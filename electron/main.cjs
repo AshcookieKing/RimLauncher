@@ -45,7 +45,7 @@ const store = new Store({
     discordUsername: '',
     discordOAuthLinked: false,
     extraLaunchArgs: '',
-    blurAmount: 12,
+    blurAmount: 4,
     scanlineIntensity: 0.35,
     animationsEnabled: true,
     battlEye: true,
@@ -178,7 +178,7 @@ function startPlaytimeTracker() {
       mainWindow?.webContents.send('rim-point-earned', result);
       if (Notification.isSupported()) {
         const n = new Notification({
-          title: 'Rim Conflict',
+          title: 'StarFront',
           body: `+${result.added || 1} RIM POINT за час в Arma 3 · баланс: ${result.rim_points ?? '?'}`,
         });
         n.show();
@@ -194,7 +194,7 @@ function startPlaytimeTracker() {
       } else if (result.error) {
         body = `Rim API: ${result.error}`;
       }
-      const n = new Notification({ title: 'Rim Conflict', body });
+      const n = new Notification({ title: 'StarFront', body });
       n.show();
     },
   });
@@ -930,7 +930,7 @@ ipcMain.handle('apply-update', async (_, downloadedPath) => {
 
 ipcMain.handle('show-notification', (_, { title, body }) => {
   if (Notification.isSupported()) {
-    const n = new Notification({ title: title || 'Rim Conflict', body: body || '' });
+    const n = new Notification({ title: title || 'StarFront', body: body || '' });
     n.show();
   }
   return { ok: true };

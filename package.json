@@ -1,8 +1,8 @@
 {
-  "name": "rim-conflict-launcher",
-  "version": "1.1.7-alpha",
-  "description": "Star Wars Rim Conflict — Arma 3 Launcher",
-  "author": "Rim Conflict",
+  "name": "starfront-launcher",
+  "version": "1.2.0-alpha",
+  "description": "StarFront — Arma 3 Launcher",
+  "author": "StarFront",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
@@ -19,7 +19,7 @@
   },
   "build": {
     "appId": "com.rimconflict.launcher",
-    "productName": "Rim Conflict Launcher",
+    "productName": "StarFront Launcher",
     "icon": "build/icon.png",
     "directories": {
       "output": "release"

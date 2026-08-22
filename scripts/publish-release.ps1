@@ -20,8 +20,8 @@ $headers = @{
 
 $body = @{
   tag_name         = $tag
-  name             = "Rim Conflict Launcher $Version"
-  body             = "Fix Rim Point playtime API fallback. Version $Version"
+  name             = "StarFront Launcher $Version"
+  body             = "Rebrand to StarFront + new background art. Version $Version"
   draft            = $false
   prerelease       = $false
   make_latest      = 'true'

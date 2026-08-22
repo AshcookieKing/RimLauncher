@@ -80,7 +80,7 @@ export default function DiscordAuthGate({ api, onAuthenticated }) {
       <div className="auth-gate-card auth-gate-card--minimal">
         <header className="auth-gate-header">
           <img src="./assets/logo.png" alt="" className="auth-gate-logo-sm" />
-          <span>Rim Conflict Launcher</span>
+          <span>StarFront Launcher</span>
         </header>
         {error && <p className="form-error auth-gate-error">{error}</p>}
         <button type="button" className="auth-gate-btn" disabled={loading} onClick={login}>

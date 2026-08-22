@@ -398,7 +398,6 @@ export default function App() {
       />
 
       <div className="main-stage">
-        <img src="./assets/hero.png" alt="" className="hero-transparent" />
         <PlayerCard
           profile={profile}
           online={online.online ?? 0}

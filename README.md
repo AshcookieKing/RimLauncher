@@ -1,9 +1,9 @@
-# Rim Conflict Launcher
+# StarFront Launcher
 
-**Версия:** 1.1.7-alpha  
+**Версия:** 1.2.0-alpha  
 **Платформа:** Windows 10/11 (x64)
 
-Десктопный лаунчер для тактического RP-сервера **Star Wars — Rim Conflict** (Arma 3).
+Десктопный лаунчер для тактического RP-сервера **StarFront** (Arma 3 — Clone Wars).
 
 ---
 
@@ -30,7 +30,7 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 
 1. Скачайте `RimConflictLauncher.exe` по ссылке выше или со страницы [Releases](https://github.com/AshcookieKing/RimLauncher/releases).
 2. Положите в любую папку и запустите.
-3. Войдите через **Discord** (аккаунт на сервере Rim Conflict).
+3. Войдите через **Discord** (аккаунт на сервере проекта).
 4. Ответьте на вопрос **«Вы новичок?»** — для новичков откроется канал 327-го батальона.
 5. В **Настройках** выберите профиль Arma 3.
 6. Нажмите **СТАРТ** — лаунчер проверит моды, откроет TeamSpeak и запустит игру.
@@ -40,7 +40,7 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 - [Arma 3](https://store.steampowered.com/app/107410/) (Steam)
 - Моды из пресета сервера (лаунчер поможет подписаться)
 - [TeamSpeak 3 Client](https://teamspeak.com/en/downloads/)
-- Discord на сервере Rim Conflict
+- Discord на сервере проекта
 
 ---
 
@@ -56,7 +56,7 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 
 ---
 
-## Сервер Rim Conflict
+## Сервер StarFront
 
 | Параметр | Значение |
 |----------|----------|
@@ -66,6 +66,11 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 ---
 
 ## Changelog
+
+### 1.2.0-alpha
+
+- Ребрендинг: **StarFront**
+- Новый фон лаунчера
 
 ### 1.1.7-alpha
 
@@ -111,4 +116,4 @@ https://github.com/AshcookieKing/RimLauncher/releases/latest
 
 ## Лицензия
 
-Проект Rim Conflict. Использование — по согласованию с администрацией.
+Проект StarFront. Использование — по согласованию с администрацией.

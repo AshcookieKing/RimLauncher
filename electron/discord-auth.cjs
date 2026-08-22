@@ -159,7 +159,7 @@ function openOAuthWindow(authUrl, { expectedState, parentWindow, allowServerCall
       height: 780,
       show: false,
       autoHideMenuBar: true,
-      title: 'Discord — Rim Conflict',
+      title: 'Discord — StarFront',
       backgroundColor: '#020810',
       icon: iconPath,
       parent: parentWindow && !parentWindow.isDestroyed() ? parentWindow : undefined,
@@ -250,7 +250,7 @@ async function verifyGuildMember(apiBase, discordUserId) {
     { timeout: 12000 }
   );
   if (status >= 400 || !data.success) {
-    throw new Error(data?.error || 'Вас нет на сервере Rim Conflict в Discord');
+    throw new Error(data?.error || 'Вас нет на сервере StarFront в Discord');
   }
   return data;
 }

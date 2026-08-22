@@ -8,8 +8,8 @@ export default function TitleBar({
 }) {
   return (
     <header className="title-bar">
-      <img src="./assets/logo.png" alt="Rim Conflict" className="title-logo" />
-      <span className="title-text">RIM CONFLICT</span>
+      <img src="./assets/logo.png" alt="StarFront" className="title-logo" />
+      <span className="title-text">STARFRONT</span>
 
       <div className="title-actions">
         <button type="button" className="title-link title-link--support" onClick={onOpenSupport}>

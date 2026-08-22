@@ -10,7 +10,7 @@ let cache = {
   status: 'offline',
   total_players: 0,
   max_players: 0,
-  server_name: 'Rim Conflict',
+  server_name: 'StarFront',
   players: [],
   updated_at: 0,
 };
@@ -29,7 +29,7 @@ async function refresh() {
       status: 'offline',
       total_players: 0,
       max_players: 0,
-      server_name: 'Rim Conflict',
+      server_name: 'StarFront',
       players: [],
       error: e.message || String(e),
       updated_at: Date.now(),

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0-alpha
+
+- Ребрендинг лаунчера: **StarFront**
+- Новый фон (StarFront artwork)
+
+## 1.1.7-alpha
+
+- Исправлено начисление RIM POINT за игру (Rim API playtime + fallback)
+
 ## 1.1.4-alpha
 
 - Обновлён встроенный пресет модов (Rim Conflict, 07.06.2026)

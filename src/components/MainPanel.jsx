@@ -19,10 +19,10 @@ export default function MainPanel({
 
       <h1 className="server-title">
         <span className="subtitle">Star Wars — Clone Wars</span>
-        RIM CONFLICT
+        STARFRONT
       </h1>
       <p className="server-desc">
-        Тактический RP-сервер эпохи Войн клонов. Подключайся через лаунчер с полным набором модов.
+        Тактический RP-сервер эпохи Войн клонов. Подключайся через лаунчер StarFront с полным набором модов.
       </p>
 
       <div className="status-line">

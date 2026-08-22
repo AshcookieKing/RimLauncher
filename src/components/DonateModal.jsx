@@ -179,7 +179,7 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
     try {
       const uid = discordUserId || (await api.getDiscordUserId());
       if (!uid) {
-        setError('Не удалось привязать Discord. Ник Arma должен совпадать с Discord на сервере Rim Conflict.');
+        setError('Не удалось привязать Discord. Ник Arma должен совпадать с Discord на сервере StarFront.');
         return;
       }
       if (!selected) {
@@ -230,7 +230,7 @@ export default function DonateModal({ open, onClose, profile, shop: shopProp, bo
     if (!text.trim() || !order?.id) return;
     const uid = discordUserId || (await api.getDiscordUserId());
     if (!uid) {
-      setError('Discord не привязан — войдите на сервер Rim Conflict с тем же ником');
+      setError('Discord не привязан — войдите на сервер StarFront с тем же ником');
       return;
     }
     setLoading(true);
