@@ -61,7 +61,12 @@ function createPlayerProfile({ nickname, faceIndex = 0 }) {
   const folderName = encodeProfileFolder(name);
   const targetDir = path.join(profilesDir, folderName);
   if (fs.existsSync(targetDir)) {
-    return { ok: false, error: 'Профиль с таким никнеймом уже существует' };
+    const existing = listPlayerProfiles().find((p) => p.id === folderName);
+    return {
+      ok: true,
+      alreadyExists: true,
+      profile: existing || { id: folderName, displayName: name, rank: '—' },
+    };
   }
 
   try {

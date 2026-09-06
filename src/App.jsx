@@ -4,6 +4,7 @@ import Background from './components/Background';
 import LaunchDock from './components/LaunchDock';
 import PlayerCard from './components/PlayerCard';
 import NewsModal from './components/NewsModal';
+import HolonetModal, { HolonetStrip } from './components/HolonetModal';
 import NewsToast from './components/NewsToast';
 import SettingsPanel from './components/SettingsPanel';
 import GuideModal from './components/GuideModal';
@@ -16,9 +17,11 @@ import DiscordAuthGate from './components/DiscordAuthGate';
 import PathSetupGate from './components/PathSetupGate';
 import NewbieGate from './components/NewbieGate';
 import UpdateModal from './components/UpdateModal';
+import CharacterVerifyModal from './components/CharacterVerifyModal';
 import DonateModal from './components/DonateModal';
 import LogoHolo from './components/LogoHolo';
 import { useEscapeClose } from './hooks/useEscapeClose';
+import { bindUiSounds } from './utils/uiSounds';
 import './styles/app.css';
 
 const RP_RULES_URL = 'http://109.248.4.174:8090/';
@@ -32,9 +35,15 @@ export default function App() {
   const [launching, setLaunching] = useState(false);
   const [view, setView] = useState('home');
   const [newsOpen, setNewsOpen] = useState(false);
+  const [holonetOpen, setHolonetOpen] = useState(false);
+  const [holonetFocusId, setHolonetFocusId] = useState(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideTutorial, setGuideTutorial] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
+  const [supportInitialMode, setSupportInitialMode] = useState(null);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [verifyMode, setVerifyMode] = useState('new');
+  const [verifyPrefill, setVerifyPrefill] = useState(null);
   const [donateOpen, setDonateOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -53,7 +62,20 @@ export default function App() {
 
   const applyDiscord = useCallback((data) => {
     if (!data) return;
-    setDiscord(data);
+    setDiscord((prev) => {
+      const next = { ...data };
+      // Не затираем ленты пустыми ответами при таймауте API
+      if ((!next.news || next.news.length === 0) && prev?.news?.length) next.news = prev.news;
+      if ((!next.holonet || next.holonet.length === 0) && prev?.holonet?.length) next.holonet = prev.holonet;
+      // character_verifications: не кэшируем при явном ответе API (иначе pending «залипает»)
+      if (next.character_verifications == null && prev?.character_verifications?.length) {
+        next.character_verifications = prev.character_verifications;
+      }
+      if (prev?.profile && next.profile && !next.profile.display_name && prev.profile.display_name) {
+        next.profile = { ...prev.profile, ...next.profile };
+      }
+      return next;
+    });
     const latest = data.news?.[0];
     if (latest && !seenNewsRef.current.has(latest.id)) {
       seenNewsRef.current.add(latest.id);
@@ -65,6 +87,18 @@ export default function App() {
     const data = await api.fetchDiscordData();
     applyDiscord(data);
   }, [applyDiscord]);
+
+  const openVerify = useCallback((opts = {}) => {
+    setVerifyMode(opts.mode || 'new');
+    setVerifyPrefill(opts.prefill || null);
+    setVerifyOpen(true);
+  }, []);
+
+  const closeVerify = useCallback(() => {
+    setVerifyOpen(false);
+    setVerifyMode('new');
+    setVerifyPrefill(null);
+  }, []);
 
   const refreshEvents = useCallback(async () => {
     try {
@@ -115,6 +149,11 @@ export default function App() {
 
     return () => {};
   }, [applyDiscord, refreshDiscord]);
+
+  useEffect(() => {
+    const unbind = bindUiSounds(document);
+    return () => unbind?.();
+  }, []);
 
   useEffect(() => {
     if (!settings) return undefined;
@@ -187,11 +226,15 @@ export default function App() {
   }, [discord, events, settings?.eventNotificationsEnabled, settings]);
 
   useEffect(() => {
-    const nick = discord?.unit_application?.profile_nickname;
+    const nick =
+      discord?.unit_application?.profile_nickname ||
+      (discord?.character_verification?.status === 'approved'
+        ? discord.character_verification.profile_nickname || discord.character_verification.character_nick
+        : null);
     if (!nick || profileNickCreatedRef.current.has(nick)) return;
     profileNickCreatedRef.current.add(nick);
     (async () => {
-      const res = await api.createProfile({ nickname: nick, faceIndex: 0 });
+      const res = await api.createProfile({ nickname: String(nick).slice(0, 32), faceIndex: 0 });
       if (res?.ok && res.profile) {
         await api.saveSettings({
           playerName: res.profile.displayName,
@@ -200,7 +243,25 @@ export default function App() {
         await refreshDiscord();
       }
     })();
-  }, [discord?.unit_application?.profile_nickname, refreshDiscord]);
+  }, [
+    discord?.unit_application?.profile_nickname,
+    discord?.character_verification?.status,
+    discord?.character_verification?.character_nick,
+    discord?.character_verification?.profile_nickname,
+    refreshDiscord,
+  ]);
+
+  // Пока заявка на верификацию pending — чаще обновляем статус (без блокировки UI)
+  useEffect(() => {
+    const hasPending =
+      discord?.character_verification?.status === 'pending' ||
+      (discord?.character_verifications || []).some((v) => v.status === 'pending');
+    if (!hasPending) return undefined;
+    const t = setInterval(() => {
+      refreshDiscord().catch(() => {});
+    }, 4000);
+    return () => clearInterval(t);
+  }, [discord?.character_verification?.status, discord?.character_verifications, refreshDiscord]);
 
   const handleStart = useCallback(async () => {
     setLaunching(true);
@@ -270,12 +331,17 @@ export default function App() {
       setDonateOpen(false);
       return;
     }
+    if (verifyOpen) {
+      closeVerify();
+      return;
+    }
     if (leaveOpen) {
       setLeaveOpen(false);
       return;
     }
     if (supportOpen) {
       setSupportOpen(false);
+      setSupportInitialMode(null);
       return;
     }
     if (guideOpen) {
@@ -285,6 +351,11 @@ export default function App() {
     }
     if (newsOpen) {
       setNewsOpen(false);
+      return;
+    }
+    if (holonetOpen) {
+      setHolonetOpen(false);
+      setHolonetFocusId(null);
       return;
     }
     if (calendarOpen) {
@@ -298,14 +369,16 @@ export default function App() {
     if (view === 'settings') {
       setView('home');
     }
-  }, [donateOpen, leaveOpen, supportOpen, guideOpen, newsOpen, calendarOpen, announcementOpen, view]);
+  }, [donateOpen, verifyOpen, leaveOpen, supportOpen, guideOpen, newsOpen, holonetOpen, calendarOpen, announcementOpen, view, closeVerify]);
 
   useEscapeClose(
     donateOpen ||
+      verifyOpen ||
       leaveOpen ||
       supportOpen ||
       guideOpen ||
       newsOpen ||
+      holonetOpen ||
       calendarOpen ||
       announcementOpen ||
       view === 'settings',
@@ -399,6 +472,10 @@ export default function App() {
         rimPoints={profile.rim_points ?? 0}
         onOpenSettings={() => setView('settings')}
         onOpenNews={() => setNewsOpen(true)}
+        onOpenHolonet={() => {
+          setHolonetFocusId(null);
+          setHolonetOpen(true);
+        }}
         onOpenGuide={() => {
           setGuideTutorial(false);
           setGuideOpen(true);
@@ -428,6 +505,18 @@ export default function App() {
       />
 
       <div className="main-stage">
+        <HolonetStrip
+          posts={discord?.holonet || []}
+          visible={settings.showHolonetOnHome !== false}
+          onOpenAll={() => {
+            setHolonetFocusId(null);
+            setHolonetOpen(true);
+          }}
+          onOpenPost={(post) => {
+            setHolonetFocusId(post?.id || null);
+            setHolonetOpen(true);
+          }}
+        />
         <PlayerCard
           profile={profile}
           online={online.online ?? 0}
@@ -438,8 +527,13 @@ export default function App() {
           showEventAnnouncement={settings.showEventAnnouncement !== false}
           showEventCalendar={settings.showEventCalendar !== false}
           battalion={battalion}
-          leaveApproved={leaveRequest?.status === 'approved'}
+          leaveApproved={Boolean(discord?.leave_approved_active)}
           onLeaveBattalion={battalion ? () => setLeaveOpen(true) : undefined}
+          onJoinSubdivision={() => {
+            setSupportInitialMode('unit-select');
+            setSupportOpen(true);
+          }}
+          onOpenVerify={() => openVerify()}
           onOpenEvent={(event) => {
             setFocusEvent(event);
             setCalendarOpen(true);
@@ -452,7 +546,17 @@ export default function App() {
       </div>
 
       {view === 'settings' && (
-        <SettingsPanel settings={settings} onSave={saveSettings} onBack={() => setView('home')} api={api} />
+        <SettingsPanel
+          settings={settings}
+          onSave={saveSettings}
+          onBack={() => setView('home')}
+          api={api}
+          discord={discord}
+          onOpenVerify={(opts) => {
+            setView('home');
+            openVerify(opts);
+          }}
+        />
       )}
 
       <LaunchDock progress={progress.percent} message={progress.message} launching={launching} onStart={handleStart} />
@@ -462,6 +566,17 @@ export default function App() {
         news={discord?.news || []}
         tiktokUrl={discord?.tiktok_url}
         onClose={() => setNewsOpen(false)}
+        onRefresh={refreshDiscord}
+      />
+
+      <HolonetModal
+        open={holonetOpen}
+        posts={discord?.holonet || []}
+        focusId={holonetFocusId}
+        onClose={() => {
+          setHolonetOpen(false);
+          setHolonetFocusId(null);
+        }}
         onRefresh={refreshDiscord}
       />
 
@@ -480,13 +595,31 @@ export default function App() {
         api={api}
         tutorialMode={guideTutorial}
         onCompleteTutorial={completeTutorial}
+        onOpenVerify={() => openVerify()}
+      />
+
+      <CharacterVerifyModal
+        open={verifyOpen}
+        onClose={closeVerify}
+        api={api}
+        verification={discord?.character_verification}
+        verifications={discord?.character_verifications}
+        mode={verifyMode}
+        prefill={verifyPrefill}
+        onSubmitted={() => {
+          refreshDiscord();
+        }}
       />
 
       <SupportHubModal
         open={supportOpen}
-        onClose={() => setSupportOpen(false)}
+        onClose={() => {
+          setSupportOpen(false);
+          setSupportInitialMode(null);
+        }}
         onOpenSettings={() => {
           setSupportOpen(false);
+          setSupportInitialMode(null);
           setView('settings');
         }}
         playerName={profile.display_name}
@@ -494,6 +627,10 @@ export default function App() {
         unitApplication={unitApplication}
         units={units}
         api={api}
+        initialMode={supportInitialMode}
+        leaveApproved={Boolean(discord?.leave_approved_active)}
+        battalion={battalion}
+        onRefresh={refreshDiscord}
       />
 
       <BattalionLeaveModal

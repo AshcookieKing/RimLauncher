@@ -4,7 +4,7 @@ const { URL } = require('url');
 const GITHUB_OWNER = 'AshcookieKing';
 const GITHUB_REPO = 'StarFront';
 const USER_AGENT = 'StarFrontLauncher';
-const LAUNCHER_EXE_NAMES = [/^StarFrontLauncher\.exe$/i, /^RimConflictLauncher\.exe$/i];
+const LAUNCHER_EXE_NAMES = [/^StarFrontLauncher\.exe$/i];
 
 function fetchText(url, redirects = 0) {
   return new Promise((resolve, reject) => {

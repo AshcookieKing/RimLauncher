@@ -1,4 +1,4 @@
-# StarFront Launcher
+# StarFrontLauncher
 
 **Версия:** 1.2.8-alpha  
 **Платформа:** Windows 10/11 (x64)
@@ -69,7 +69,7 @@ https://github.com/AshcookieKing/StarFront/releases/latest
 
 ### 1.2.8-alpha
 
-- Ребрендинг репозитория и EXE: **StarFront Launcher**
+- Ребрендинг репозитория и EXE: **StarFrontLauncher**
 - API `109.248.4.174`, новости/медиа, заявки и предложения
 
 ### 1.2.2-alpha

@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "algo": "xor-sha256-stream",
+  "seed": "StarFront-SFCM-launcher-embed-v1",
+  "pbo": "zzz_SF_CHAR_MENU.pbo",
+  "prefix": "SF_CHAR_MENU",
+  "sha256": "a5b54b172aff41b3c8501d42b13d86fbea1da6cd3e3b495dae23525d03b3be31",
+  "size": 44707614,
+  "parts": [
+    {
+      "i": 0,
+      "file": "p00_f6003cadef74.bin",
+      "len": 3725635
+    },
+    {
+      "i": 1,
+      "file": "p01_a128bfa11fbf.bin",
+      "len": 3725635
+    },
+    {
+      "i": 2,
+      "file": "p02_5b8b0bae45d4.bin",
+      "len": 3725635
+    },
+    {
+      "i": 3,
+      "file": "p03_b5690218d264.bin",
+      "len": 3725635
+    },
+    {
+      "i": 4,
+      "file": "p04_4f0e77e7ca80.bin",
+      "len": 3725635
+    },
+    {
+      "i": 5,
+      "file": "p05_88a470557ce4.bin",
+      "len": 3725635
+    },
+    {
+      "i": 6,
+      "file": "p06_d3697b02a96c.bin",
+      "len": 3725635
+    },
+    {
+      "i": 7,
+      "file": "p07_e4082a866762.bin",
+      "len": 3725635
+    },
+    {
+      "i": 8,
+      "file": "p08_cd367f737aaa.bin",
+      "len": 3725635
+    },
+    {
+      "i": 9,
+      "file": "p09_70dd534296bf.bin",
+      "len": 3725635
+    },
+    {
+      "i": 10,
+      "file": "p10_4eee6fe77855.bin",
+      "len": 3725635
+    },
+    {
+      "i": 11,
+      "file": "p11_99cbcd2c627d.bin",
+      "len": 3725629
+    }
+  ]
+}

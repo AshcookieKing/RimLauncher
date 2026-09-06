@@ -52,6 +52,10 @@ contextBridge.exposeInMainWorld('rimLauncher', {
   unitApplicationSend: (appId, payload) => ipcRenderer.invoke('unit-application-send', appId, payload),
   withdrawUnitApplication: (appId, payload) => ipcRenderer.invoke('withdraw-unit-application', appId, payload),
   submitUnitRoleRequest: (appId, payload) => ipcRenderer.invoke('submit-unit-role-request', appId, payload),
+  submitCharacterVerification: (payload) => ipcRenderer.invoke('submit-character-verification', payload),
+  getCharacterVerification: () => ipcRenderer.invoke('get-character-verification'),
+  selectCharacterVerification: (payload) => ipcRenderer.invoke('select-character-verification', payload),
+  cancelCharacterVerification: (payload) => ipcRenderer.invoke('cancel-character-verification', payload),
   onDiscordAuthUpdated: (cb) => {
     ipcRenderer.on('discord-auth-updated', (_, data) => cb(data));
   },

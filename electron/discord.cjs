@@ -3,8 +3,23 @@ const http = require('http');
 const directFeed = require('./discord-direct.cjs');
 
 const DEFAULT_API = 'http://109.248.4.174:5003';
-const API_GET_TIMEOUT_MS = 8000;
+const API_GET_TIMEOUT_MS = 14000;
 const API_POST_TIMEOUT_MS = 20000;
+
+let lastNewsCache = [];
+let lastHolonetCache = [];
+
+function preferList(primary, fallback, cache) {
+  if (Array.isArray(primary) && primary.length) {
+    cache.splice(0, cache.length, ...primary);
+    return primary;
+  }
+  if (Array.isArray(fallback) && fallback.length) {
+    cache.splice(0, cache.length, ...fallback);
+    return fallback;
+  }
+  return Array.isArray(cache) && cache.length ? [...cache] : [];
+}
 
 function fetchJson(url, timeoutMs = API_GET_TIMEOUT_MS, options = {}) {
   return new Promise((resolve, reject) => {
@@ -46,6 +61,28 @@ function apiBase(base) {
   return (base || DEFAULT_API).replace(/\/$/, '');
 }
 
+async function fetchHolonetFeed(apiBaseUrl) {
+  const base = apiBase(apiBaseUrl);
+  try {
+    const data = await fetchJson(`${base}/api/launcher/holonet`, 12000);
+    return preferList(data?.holonet, null, lastHolonetCache);
+  } catch {
+    const direct = await directFeed.fetchHolonetDirect(true).catch(() => []);
+    return preferList(direct, null, lastHolonetCache);
+  }
+}
+
+async function fetchNewsFeed(apiBaseUrl) {
+  const base = apiBase(apiBaseUrl);
+  try {
+    const data = await fetchJson(`${base}/api/launcher/news`, 12000);
+    return preferList(data?.news, null, lastNewsCache);
+  } catch {
+    const direct = await directFeed.fetchNewsDirect(true).catch(() => []);
+    return preferList(direct, null, lastNewsCache);
+  }
+}
+
 async function fetchLauncherStatus(discordUserId, apiBaseUrl = DEFAULT_API, playerName = '') {
   const base = apiBase(apiBaseUrl);
   const params = new URLSearchParams();
@@ -53,24 +90,37 @@ async function fetchLauncherStatus(discordUserId, apiBaseUrl = DEFAULT_API, play
   if (playerName) params.set('player_name', String(playerName));
   const q = params.toString() ? `?${params.toString()}` : '';
   const directNewsPromise = directFeed.fetchNewsDirect().catch(() => []);
+  const directHolonetPromise = directFeed.fetchHolonetDirect().catch(() => []);
   const offline = {
     success: false,
     online: { online: 0, max_players: 0, status: 'offline', server_ip: '109.248.4.45', server_port: 2302 },
     profile: { display_name: 'Гость', rank: '—', faction: '—', role: '—', rim_points: 0 },
     news: [],
+    holonet: [],
   };
   try {
     const data = await fetchJson(`${base}/api/launcher/status${q}`, API_GET_TIMEOUT_MS);
-    const directNews = await directNewsPromise;
-    if (directNews.length) {
-      data.news = directNews;
-    } else if (!data.news?.length) {
-      const retry = await directFeed.fetchNewsDirect(true).catch(() => []);
-      if (retry.length) data.news = retry;
+    const [directNews, directHolonet] = await Promise.all([directNewsPromise, directHolonetPromise]);
+    data.news = preferList(data.news, directNews, lastNewsCache);
+    data.holonet = preferList(data.holonet, directHolonet, lastHolonetCache);
+
+    // Если status не отдал ленты — добираем отдельными эндпоинтами
+    if (!data.news?.length || !data.holonet?.length) {
+      const [apiNews, apiHolonet] = await Promise.all([
+        data.news?.length ? Promise.resolve(data.news) : fetchNewsFeed(apiBaseUrl),
+        data.holonet?.length ? Promise.resolve(data.holonet) : fetchHolonetFeed(apiBaseUrl),
+      ]);
+      data.news = preferList(apiNews, data.news, lastNewsCache);
+      data.holonet = preferList(apiHolonet, data.holonet, lastHolonetCache);
     }
     return data;
   } catch (e) {
-    const directNews = await directNewsPromise;
+    const [directNews, directHolonet, apiNews, apiHolonet] = await Promise.all([
+      directNewsPromise,
+      directHolonetPromise,
+      fetchNewsFeed(apiBaseUrl),
+      fetchHolonetFeed(apiBaseUrl),
+    ]);
     const msg = e.message || 'Ошибка API';
     const apiDown = /ECONNREFUSED|ECONNRESET|ETIMEDOUT|connect E|10061|Таймаут|timeout|недоступен/i.test(msg);
     return {
@@ -78,7 +128,8 @@ async function fetchLauncherStatus(discordUserId, apiBaseUrl = DEFAULT_API, play
       error: apiDown
         ? 'API бота недоступен (109.248.4.174:5003) — запустите text_bot на сервере'
         : msg,
-      news: directNews,
+      news: preferList(apiNews, directNews, lastNewsCache),
+      holonet: preferList(apiHolonet, directHolonet, lastHolonetCache),
       api_offline: apiDown,
     };
   }
@@ -224,7 +275,7 @@ async function sendUnitApplicationMessage(appId, payload, apiBaseUrl) {
 }
 
 async function withdrawUnitApplication(appId, payload, apiBaseUrl) {
-  return postJson(`/api/launcher/unit/${appId}/withdraw`, payload, apiBaseUrl);
+  return safePost(`/api/launcher/unit/${appId}/withdraw`, payload, apiBaseUrl);
 }
 
 async function cancelDonation(orderId, payload, apiBaseUrl) {
@@ -313,6 +364,23 @@ async function claimPlaytimeRimPoint(discordUserId, apiBaseUrl) {
   );
 }
 
+async function submitCharacterVerification(payload, apiBaseUrl) {
+  return safePost('/api/launcher/character/verify', payload, apiBaseUrl);
+}
+
+async function getCharacterVerification(discordUserId, apiBaseUrl) {
+  const qs = discordUserId ? `?discord_user_id=${encodeURIComponent(discordUserId)}` : '';
+  return getJson(`/api/launcher/character/verification${qs}`, apiBaseUrl);
+}
+
+async function selectCharacterVerification(payload, apiBaseUrl) {
+  return safePost('/api/launcher/character/select', payload, apiBaseUrl);
+}
+
+async function cancelCharacterVerification(payload, apiBaseUrl) {
+  return safePost('/api/launcher/character/cancel', payload, apiBaseUrl);
+}
+
 module.exports = {
   DEFAULT_API,
   fetchLauncherStatus,
@@ -344,4 +412,8 @@ module.exports = {
   withdrawUnitApplication,
   submitUnitRoleRequest,
   claimPlaytimeRimPoint,
+  submitCharacterVerification,
+  getCharacterVerification,
+  selectCharacterVerification,
+  cancelCharacterVerification,
 };

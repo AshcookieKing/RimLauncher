@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useEscapeClose } from '../hooks/useEscapeClose';
 
-export default function GuideModal({ open, onClose, api, onCompleteTutorial, tutorialMode }) {
+export default function GuideModal({ open, onClose, api, onCompleteTutorial, tutorialMode, onOpenVerify }) {
   const [guide, setGuide] = useState(null);
   const [tab, setTab] = useState('tutorial');
   const [step, setStep] = useState(0);
@@ -90,6 +90,20 @@ export default function GuideModal({ open, onClose, api, onCompleteTutorial, tut
                     {sec.bullets?.map((b) => (
                       <li key={b}>{b}</li>
                     ))}
+                    {sec.action === 'verify' && (
+                      <div className="guide-links">
+                        <button
+                          type="button"
+                          className="btn-save"
+                          onClick={() => {
+                            onClose?.();
+                            onOpenVerify?.();
+                          }}
+                        >
+                          Подать заявку
+                        </button>
+                      </div>
+                    )}
                     {(sec.url || sec.urls) && (
                       <div className="guide-links">
                       {sec.url && (

@@ -14,6 +14,8 @@ export default function PlayerCard({
   battalion,
   leaveApproved,
   onLeaveBattalion,
+  onJoinSubdivision,
+  onOpenVerify,
 }) {
   const playersOnline = Number(online) || 0;
   const st = String(serverStatus || '').toLowerCase();
@@ -23,6 +25,13 @@ export default function PlayerCard({
     st === 'started' ||
     playersOnline > 0;
   const statusLabel = isServerUp ? 'В СЕТИ' : st === 'offline' ? 'ОФФЛАЙН' : '—';
+  const factionUpper = String(profile?.faction || '').trim().toUpperCase();
+  const isVar = factionUpper === 'ВАР' || factionUpper === 'CR' || factionUpper === 'VAR';
+  const showJoinSubdivision =
+    Boolean(onJoinSubdivision) &&
+    !battalion &&
+    profile?.character_verified &&
+    isVar;
 
   const eventLabel = nextEvent
     ? nextEvent.is_live
@@ -65,6 +74,11 @@ export default function PlayerCard({
           </button>
         ))}
       <div className="player-card-inner">
+        <div className="galactic-date" title="Галактический стандартный календарь · Ход войны">
+          <span className="galactic-date-label">Galactic Standard Calendar</span>
+          <span className="galactic-date-code">22 · 6 · BBY</span>
+          <span className="galactic-date-era">6‑й месяц Войны клонов</span>
+        </div>
         <h2 className="player-name">{profile.display_name || 'Гость'}</h2>
         {profile.in_game_name && profile.in_game_name !== profile.display_name && (
           <p className="player-nick">{profile.in_game_name}</p>
@@ -72,7 +86,20 @@ export default function PlayerCard({
         <div className="player-meta">
           <div className="meta-block">
             <span className="meta-label">Звание / роль</span>
-            <span className="meta-value">{profile.rank || profile.role || '—'}</span>
+            <span className="meta-value">
+              {profile.rank || profile.role || '—'}
+              {profile.specialty ? ` · ${profile.specialty}` : ''}
+            </span>
+            {showJoinSubdivision && (
+              <button type="button" className="btn-ghost-sm btn-join-unit" onClick={onJoinSubdivision}>
+                Вступить в подразделение
+              </button>
+            )}
+            {!profile.character_verified && onOpenVerify && (
+              <button type="button" className="btn-ghost-sm btn-join-unit" onClick={onOpenVerify}>
+                Верифицировать персонажа
+              </button>
+            )}
           </div>
           <div className="meta-block">
             <span className="meta-label">Фракция</span>

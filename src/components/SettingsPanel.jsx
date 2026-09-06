@@ -13,7 +13,7 @@ function Toggle({ checked, onChange, label, hint }) {
   );
 }
 
-export default function SettingsPanel({ settings, onSave, onBack, api }) {
+export default function SettingsPanel({ settings, onSave, onBack, api, discord, onOpenVerify }) {
   const [form, setForm] = useState({ ...settings });
   const [newNick, setNewNick] = useState('');
   const [newFace, setNewFace] = useState(0);
@@ -27,11 +27,23 @@ export default function SettingsPanel({ settings, onSave, onBack, api }) {
   const [presetMsg, setPresetMsg] = useState('');
   const [pathMsg, setPathMsg] = useState('');
   const [pathBusy, setPathBusy] = useState(false);
+  const [characters, setCharacters] = useState(() => discord?.character_verifications || []);
+  const [charMsg, setCharMsg] = useState('');
+  const [charBusy, setCharBusy] = useState(false);
   const set = (key, value) => setForm((f) => ({ ...f, [key]: value }));
 
   const profiles = form.profiles || [];
   const paths = form.paths || {};
   const faceNames = form.faceNames || [];
+
+  const statusLabel = (s) =>
+    ({ approved: 'Верифицирован', pending: 'Ожидает', rejected: 'Отклонён', superseded: 'Заменён' }[s] || s || '—');
+
+  useEffect(() => {
+    if (discord?.character_verifications) {
+      setCharacters(discord.character_verifications);
+    }
+  }, [discord?.character_verifications]);
 
   useEffect(() => {
     (async () => {
@@ -42,9 +54,42 @@ export default function SettingsPanel({ settings, onSave, onBack, api }) {
           setDiscordUserId(auth.discordUserId || '');
           setDiscordUsername(auth.discordUsername || '');
         }
+        const res = await api.getCharacterVerification?.();
+        if (res?.verifications) setCharacters(res.verifications);
       } catch {}
     })();
   }, [api]);
+
+  const refreshCharacters = async () => {
+    try {
+      const res = await api.getCharacterVerification?.();
+      if (res?.verifications) setCharacters(res.verifications);
+      await api.fetchDiscordData?.();
+    } catch {}
+  };
+
+  const selectCharacter = async (ver) => {
+    if (!ver?.id || ver.status !== 'approved') return;
+    setCharBusy(true);
+    setCharMsg('');
+    try {
+      const res = await api.selectCharacterVerification?.({
+        discord_user_id: discordUserId,
+        verification_id: ver.id,
+      });
+      if (!res?.success) {
+        setCharMsg(res?.error || 'Не удалось выбрать персонажа');
+        return;
+      }
+      if (res.verifications) setCharacters(res.verifications);
+      setCharMsg(`Активный: ${ver.character_nick || ver.profile_nickname}`);
+      await api.fetchDiscordData?.();
+    } catch (e) {
+      setCharMsg(e?.message || 'Ошибка');
+    } finally {
+      setCharBusy(false);
+    }
+  };
 
   const createProfile = async () => {
     setProfileMsg('');
@@ -299,6 +344,83 @@ export default function SettingsPanel({ settings, onSave, onBack, api }) {
           </div>
 
           <div className="settings-block">
+            <h3>Персонажи</h3>
+            <p className="block-hint">
+              Список верифицированных и ожидающих. Активный персонаж отображается на карточке игрока.
+            </p>
+            {!discordLinked ? (
+              <p className="block-hint">Сначала привяжите Discord</p>
+            ) : characters.length === 0 ? (
+              <p className="block-hint">Пока нет заявок — верифицируйте первого персонажа</p>
+            ) : (
+              <ul className="character-verify-list">
+                {characters.map((v) => {
+                  const active = Number(v.is_active) === 1 && v.status === 'approved';
+                  const nick = v.character_nick || v.profile_nickname || `Заявка #${v.id}`;
+                  return (
+                    <li key={v.id} className={`character-verify-item${active ? ' is-active' : ''}`}>
+                      <div className="character-verify-main">
+                        <strong>{nick}</strong>
+                        <span className={`character-verify-status status-${v.status || 'unknown'}`}>
+                          {statusLabel(v.status)}
+                          {active ? ' · активный' : ''}
+                        </span>
+                        <span className="character-verify-meta">
+                          {v.faction || '—'}
+                          {v.rank ? ` · ${v.rank}` : ''}
+                        </span>
+                      </div>
+                      <div className="character-verify-actions">
+                        {v.status === 'approved' && !active && (
+                          <button
+                            type="button"
+                            className="btn-ghost-sm"
+                            disabled={charBusy}
+                            onClick={() => selectCharacter(v)}
+                          >
+                            Выбрать
+                          </button>
+                        )}
+                        {v.status === 'approved' && (
+                          <button
+                            type="button"
+                            className="btn-ghost-sm"
+                            disabled={charBusy}
+                            onClick={() => onOpenVerify?.({ mode: 'reverify', prefill: v })}
+                          >
+                            Переверифицировать
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <div className="settings-actions-row">
+              <button
+                type="button"
+                className="btn-save"
+                disabled={!discordLinked}
+                onClick={() =>
+                  onOpenVerify?.({
+                    mode: characters.some((c) => c.status === 'approved') ? 'additional' : 'new',
+                    prefill: null,
+                  })
+                }
+              >
+                {characters.some((c) => c.status === 'approved')
+                  ? 'Верифицировать ещё'
+                  : 'Верифицировать персонажа'}
+              </button>
+              <button type="button" className="btn-ghost-sm" disabled={!discordLinked || charBusy} onClick={refreshCharacters}>
+                Обновить
+              </button>
+            </div>
+            {charMsg && <p className="block-hint">{charMsg}</p>}
+          </div>
+
+          <div className="settings-block">
             <h3>Пресет модов</h3>
             <p className="block-hint">HTML-пресет Arma 3 Workshop (.html). По умолчанию — встроенный rim_preset.</p>
             <div className="path-row">
@@ -396,19 +518,9 @@ export default function SettingsPanel({ settings, onSave, onBack, api }) {
               hint="profiling.exe + параметры производительности"
             />
             <Toggle
-              checked={form.skipIntro === true}
-              onChange={(v) => set('skipIntro', v)}
-              label="Пропускать интро"
-            />
-            <Toggle
               checked={form.skipLogos === true}
               onChange={(v) => set('skipLogos', v)}
               label="Пропускать логотипы при запуске"
-            />
-            <Toggle
-              checked={form.staticMenuBackground === true}
-              onChange={(v) => set('staticMenuBackground', v)}
-              label="Статический фон в меню"
             />
           </div>
 
@@ -450,6 +562,12 @@ export default function SettingsPanel({ settings, onSave, onBack, api }) {
               onChange={(v) => set('showEventCalendar', v)}
               label="Календарь ивентов"
               hint="Ближайший ивент и кнопка календаря"
+            />
+            <Toggle
+              checked={form.showHolonetOnHome !== false}
+              onChange={(v) => set('showHolonetOnHome', v)}
+              label="Holonet на главной"
+              hint="Слайдер галактических новостей. Если выкл — только кнопка HOLONET"
             />
             <Toggle
               checked={form.eventNotificationsEnabled !== false}

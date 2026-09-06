@@ -219,8 +219,7 @@ function buildModParam(modResults) {
 function buildLaunchArgs(config, modParam) {
   const args = [];
   if (config.skipLogos === true) args.push('-noSplash');
-  if (config.skipIntro === true) args.push('-skipIntro');
-  if (config.staticMenuBackground === true) args.push('-world=empty');
+  // Интро меню StarFront нельзя отключить — никогда не передаём -skipIntro / -world=empty
   if (config.optimizedLaunch === true) {
     args.push('-noPause', ...performanceArgs(config));
   } else if (config.performancePreset && config.performancePreset !== 'off') {

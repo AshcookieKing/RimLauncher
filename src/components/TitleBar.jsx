@@ -4,6 +4,7 @@ export default function TitleBar({
   rimPoints,
   onOpenSettings,
   onOpenNews,
+  onOpenHolonet,
   onOpenGuide,
   onOpenSupport,
   onOpenRpRules,
@@ -15,6 +16,9 @@ export default function TitleBar({
       <span className="title-text">STARFRONT</span>
 
       <div className="title-actions">
+        <button type="button" className="title-link title-link--holonet" onClick={onOpenHolonet}>
+          HOLONET
+        </button>
         <button type="button" className="title-link title-link--support" onClick={onOpenSupport}>
           ПОДДЕРЖКА
         </button>

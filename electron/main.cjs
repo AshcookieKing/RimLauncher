@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Notification, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Notification, dialog, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const Store = require('electron-store');
@@ -29,7 +29,7 @@ const STORE_KEYS = new Set([
   'discordUserId', 'discordUsername', 'discordOAuthLinked', 'extraLaunchArgs', 'blurAmount', 'scanlineIntensity', 'animationsEnabled',
   'battlEye', 'optimizedLaunch', 'screenMode', 'performancePreset', 'cpuCount', 'maxMem',
   'maxVram', 'exThreads', 'tutorialComplete', 'showEventAnnouncement', 'showEventCalendar',
-  'eventNotificationsEnabled', 'presetPath',
+  'eventNotificationsEnabled', 'showHolonetOnHome', 'presetPath',
   'skipIntro', 'skipLogos', 'staticMenuBackground', 'pathsConfigured', 'newbiePromptComplete',
 ]);
 
@@ -61,10 +61,11 @@ const store = new Store({
     showEventAnnouncement: true,
     showEventCalendar: true,
     eventNotificationsEnabled: true,
+    showHolonetOnHome: true,
     presetPath: '',
-    skipIntro: true,
+    skipIntro: false,
     skipLogos: true,
-    staticMenuBackground: true,
+    staticMenuBackground: false,
     pathsConfigured: false,
     playtimeAccumulatedMs: 0,
   },
@@ -143,6 +144,9 @@ function watchGameProcess(pid, webContents) {
     if (seenRunning && !pidRunning && !armaRunning) {
       clearInterval(gameWatchTimer);
       gameWatchTimer = null;
+      try {
+        require('./sfcm-menu.cjs').cleanupMenuMod();
+      } catch {}
       if (!webContents.isDestroyed()) {
         webContents.send('launch-reset');
       }
@@ -333,9 +337,9 @@ function getConfig() {
     maxMem: store.get('maxMem') || 0,
     maxVram: store.get('maxVram') || 0,
     exThreads: store.get('exThreads') || 0,
-    skipIntro: store.get('skipIntro', true) === true,
+    skipIntro: false,
     skipLogos: store.get('skipLogos', true) === true,
-    staticMenuBackground: store.get('staticMenuBackground', true) === true,
+    staticMenuBackground: false,
   };
 }
 
@@ -371,14 +375,22 @@ function mergeProfile(discordData) {
     profileId: store.get('activeProfileId'),
   });
   const d = discordData?.profile || {};
-  const rankFromArma = armaInfo.rank && armaInfo.rank !== '—' ? armaInfo.rank : null;
+  const verified = Boolean(d.character_verified);
+  const rankFromArma = !verified && armaInfo.rank && armaInfo.rank !== '—' ? armaInfo.rank : null;
+  const discordFaction = d.faction && d.faction !== '—' ? d.faction : null;
   return {
     ...d,
-    display_name: armaInfo.displayName || d.display_name || 'Гость',
-    in_game_name: armaInfo.inGameName || d.in_game_name,
-    rank: rankFromArma || (d.rank && d.rank !== '—' ? d.rank : '—'),
-    faction: armaInfo.faction || d.faction || 'ВАР',
-    role: rankFromArma || d.role || '—',
+    display_name: verified
+      ? d.display_name || armaInfo.displayName || 'Гость'
+      : armaInfo.displayName || d.display_name || 'Гость',
+    in_game_name: verified
+      ? d.in_game_name || armaInfo.inGameName
+      : armaInfo.inGameName || d.in_game_name,
+    rank: (d.rank && d.rank !== '—' ? d.rank : null) || rankFromArma || '—',
+    faction: discordFaction || '—',
+    role: (d.role && d.role !== '—' ? d.role : null) || rankFromArma || '—',
+    specialty: d.specialty || null,
+    character_verified: verified,
     rim_points: d.rim_points ?? 0,
     arma_profiles: armaInfo.profiles || [],
     active_profile_id: armaInfo.found ? armaInfo.profilePath : null,
@@ -401,16 +413,20 @@ function startOnlinePolling() {
     } catch {}
   };
   poll();
-  onlinePollTimer = setInterval(poll, 3000);
+  onlinePollTimer = setInterval(poll, 8000);
 }
 
 async function bootstrapDiscordData() {
   try {
     const localOnline = await resolveOnlineStatus(SERVER_HOST, SERVER_PORT);
     let directNews = [];
+    let directHolonet = [];
     try {
-      const { fetchNewsDirect } = require('./discord-direct.cjs');
-      directNews = await fetchNewsDirect();
+      const { fetchNewsDirect, fetchHolonetDirect } = require('./discord-direct.cjs');
+      [directNews, directHolonet] = await Promise.all([
+        fetchNewsDirect().catch(() => []),
+        fetchHolonetDirect().catch(() => []),
+      ]);
     } catch {}
 
     cachedDiscordData = enrichDiscordData({
@@ -418,6 +434,7 @@ async function bootstrapDiscordData() {
       online: localOnline,
       profile: {},
       news: directNews,
+      holonet: directHolonet,
     });
     mainWindow?.webContents.send('discord-data', cachedDiscordData);
     startOnlinePolling();
@@ -467,6 +484,26 @@ function loadModsList() {
   return cachedMods;
 }
 
+function installYoutubeRefererFix() {
+  // Packaged app loads from file:// — Chromium sends no Referer to YouTube iframes → Error 153.
+  const filter = {
+    urls: [
+      '*://*.youtube.com/*',
+      '*://*.youtube-nocookie.com/*',
+      '*://*.googlevideo.com/*',
+      '*://*.ytimg.com/*',
+    ],
+  };
+  session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
+    const headers = { ...details.requestHeaders };
+    const referer = headers.Referer || headers.referer || '';
+    if (!referer || referer.startsWith('file://') || referer === 'null') {
+      headers.Referer = 'https://www.youtube-nocookie.com/';
+    }
+    callback({ requestHeaders: headers });
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -495,6 +532,7 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  installYoutubeRefererFix();
   try {
     loadModsList();
   } catch (e) {
@@ -541,6 +579,9 @@ ipcMain.handle('save-settings', async (_, settings) => {
   for (const [key, value] of Object.entries(settings)) {
     if (value !== undefined && STORE_KEYS.has(key)) store.set(key, value);
   }
+  // Интро всегда включено — игнорируем старые сохранённые флаги
+  store.set('skipIntro', false);
+  store.set('staticMenuBackground', false);
   if (settings.presetPath !== undefined && settings.presetPath !== oldPreset) {
     try {
       loadModsList();
@@ -669,6 +710,27 @@ ipcMain.handle('withdraw-unit-application', (_, appId, payload) =>
 ipcMain.handle('submit-unit-role-request', (_, appId, payload) =>
   discord.submitUnitRoleRequest(appId, payload, apiBase())
 );
+ipcMain.handle('submit-character-verification', (_, payload) =>
+  discord.submitCharacterVerification(payload, apiBase())
+);
+ipcMain.handle('get-character-verification', async () => {
+  const uid = store.get('discordUserId');
+  return discord.getCharacterVerification(uid, apiBase());
+});
+ipcMain.handle('select-character-verification', async (_, payload) => {
+  const uid = store.get('discordUserId');
+  return discord.selectCharacterVerification(
+    { ...(payload || {}), discord_user_id: (payload && payload.discord_user_id) || uid },
+    apiBase()
+  );
+});
+ipcMain.handle('cancel-character-verification', async (_, payload) => {
+  const uid = store.get('discordUserId');
+  return discord.cancelCharacterVerification(
+    { ...(payload || {}), discord_user_id: (payload && payload.discord_user_id) || uid },
+    apiBase()
+  );
+});
 ipcMain.handle('get-support-online', () => discord.fetchSupportOnline(apiBase()));
 ipcMain.handle('get-active-ticket', (_, discordUserId) => discord.fetchActiveTicket(discordUserId, apiBase()));
 ipcMain.handle('create-ticket', (_, payload) => discord.createTicket(payload, apiBase()));

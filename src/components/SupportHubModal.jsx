@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const UNITS_FALLBACK = [
   { id: 'test', label: '🧪 Тест' },
@@ -10,7 +10,20 @@ const UNITS_FALLBACK = [
 
 const UNIT_APP_ID_KEY = 'rim_unit_app_id';
 
-export default function SupportHubModal({ open, onClose, playerName, supportOnline: supportOnlineProp, unitApplication: unitAppProp, units: unitsProp, api, onOpenSettings }) {
+export default function SupportHubModal({
+  open,
+  onClose,
+  playerName,
+  supportOnline: supportOnlineProp,
+  unitApplication: unitAppProp,
+  units: unitsProp,
+  api,
+  onOpenSettings,
+  initialMode,
+  leaveApproved = false,
+  battalion = null,
+  onRefresh,
+}) {
   const [mode, setMode] = useState('ticket-chat');
   const [ticket, setTicket] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -30,7 +43,18 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
   const [unitApp, setUnitApp] = useState(unitAppProp || null);
   const [unitMessages, setUnitMessages] = useState([]);
   const [selectedUnit, setSelectedUnit] = useState('');
-  const [unitForm, setUnitForm] = useState({ nick: '', callsign: '', call_time: '', timezone: '', reason: '' });
+  const [unitForm, setUnitForm] = useState({
+    nick: '',
+    character_nick: '',
+    callsign: '',
+    call_time: '',
+    timezone: '',
+    experience: '',
+    desired_position: '',
+    reason: '',
+  });
+  /** Локально закрытая заявка: не давать устаревшему unitAppProp вернуть её в «активна». */
+  const localClosedRef = useRef(null);
 
   const getUnitMeta = useCallback(
     (unitId) => units.find((u) => u.id === unitId) || {},
@@ -73,11 +97,13 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
 
   const unitModeFromApp = useCallback((app) => {
     if (!app) return 'unit-select';
+    if (app.status === 'left') return 'unit-closed';
     if (app.status === 'approved' && !app.role_granted) return 'unit-role';
-    if (app.status === 'role_requested' || (app.status === 'approved' && app.role_granted)) return 'unit-done';
+    // role_requested = процесс завершён, не держим как активную
+    if (app.status === 'role_requested' || (app.status === 'approved' && app.role_granted)) return 'unit-closed';
     if (app.status === 'processing') return 'unit-chat';
     if (app.status === 'pending') return 'unit-pending';
-    if (app.status === 'rejected' || app.status === 'withdrawn' || app.status === 'left') return 'unit-closed';
+    if (app.status === 'rejected' || app.status === 'withdrawn') return 'unit-closed';
     return 'unit-select';
   }, []);
 
@@ -111,17 +137,21 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
       const data = await api.getActiveUnitApplication({ discordUserId: uid });
       if (data?.application) {
         const st = data.application.status;
-        if (['pending', 'processing', 'approved', 'role_requested'].includes(st)) {
+        if (['pending', 'processing', 'approved'].includes(st) && !(st === 'approved' && data.application.role_granted)) {
           applyUnitData(data);
           localStorage.setItem(UNIT_APP_ID_KEY, String(data.application.id));
           return;
         }
-        if (['withdrawn', 'rejected', 'left'].includes(st)) {
-          setUnitApp(data.application);
-          setUnitMessages(data.messages || []);
-          setMode('unit-closed');
+        if (['withdrawn', 'rejected', 'left', 'role_requested'].includes(st) || (st === 'approved' && data.application.role_granted)) {
+          localStorage.removeItem(UNIT_APP_ID_KEY);
+          localClosedRef.current = null;
+          setUnitApp(null);
+          setUnitMessages([]);
+          setMode('unit-select');
           return;
         }
+      } else {
+        localStorage.removeItem(UNIT_APP_ID_KEY);
       }
     }
 
@@ -130,17 +160,20 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
       const data = await api.getActiveUnitApplication({ appId });
       if (data?.application) {
         const st = data.application.status;
-        if (['withdrawn', 'rejected', 'left'].includes(st)) {
-          setUnitApp(data.application);
-          setUnitMessages(data.messages || []);
-          setMode('unit-closed');
-        } else if (['pending', 'processing', 'approved', 'role_requested'].includes(st)) {
+        if (['pending', 'processing'].includes(st) || (st === 'approved' && !data.application.role_granted)) {
           applyUnitData(data);
         } else {
+          // role_requested / closed — не блокируем новую заявку
           localStorage.removeItem(UNIT_APP_ID_KEY);
+          localClosedRef.current = null;
+          setUnitApp(null);
+          setUnitMessages([]);
+          setMode('unit-select');
         }
       } else {
         localStorage.removeItem(UNIT_APP_ID_KEY);
+        setUnitApp(null);
+        setMode('unit-select');
       }
     }
   }, [api, applyUnitData, discordUserId, refreshDiscordAuth]);
@@ -159,8 +192,75 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
   }, [unitsProp]);
 
   useEffect(() => {
-    if (unitAppProp) setUnitApp(unitAppProp);
-  }, [unitAppProp]);
+    if (unitAppProp) {
+      const propId = Number(unitAppProp.id || 0);
+      const closed = localClosedRef.current;
+      if (closed && closed.id === propId) {
+        if (['withdrawn', 'rejected', 'left', 'role_requested'].includes(unitAppProp.status)) {
+          localClosedRef.current = null;
+          localStorage.removeItem(UNIT_APP_ID_KEY);
+          setUnitApp(null);
+          setMode('unit-select');
+        }
+        return;
+      }
+      if (
+        unitAppProp.status === 'left' ||
+        unitAppProp.status === 'role_requested' ||
+        (leaveApproved && ['approved', 'role_requested'].includes(unitAppProp.status))
+      ) {
+        localStorage.removeItem(UNIT_APP_ID_KEY);
+        localClosedRef.current = null;
+        setUnitApp(null);
+        setMode('unit-select');
+        return;
+      }
+      if (['withdrawn', 'rejected'].includes(unitAppProp.status)) {
+        localStorage.removeItem(UNIT_APP_ID_KEY);
+        localClosedRef.current = null;
+        setUnitApp(null);
+        setMode('unit-select');
+        return;
+      }
+      if (localClosedRef.current && mode === 'unit-closed') {
+        return;
+      }
+      setUnitApp(unitAppProp);
+      const next = unitModeFromApp(unitAppProp);
+      if (['unit-pending', 'unit-chat', 'unit-role'].includes(next) && mode !== next) {
+        setMode(next);
+      } else if (next === 'unit-closed' || next === 'unit-select') {
+        localStorage.removeItem(UNIT_APP_ID_KEY);
+        setUnitApp(null);
+        setMode('unit-select');
+      }
+    } else {
+      // Нет активной заявки с API — не держим старый unit-done / role_requested экран
+      localClosedRef.current = null;
+      if (['unit-done', 'unit-closed'].includes(mode) || (mode === 'unit-role' && !unitApp)) {
+        localStorage.removeItem(UNIT_APP_ID_KEY);
+        setUnitApp(null);
+        if (mode === 'unit-done' || mode === 'unit-closed') setMode('unit-select');
+      } else if (leaveApproved && !battalion) {
+        localStorage.removeItem(UNIT_APP_ID_KEY);
+        if (['unit-done', 'unit-role', 'unit-pending', 'unit-chat'].includes(mode)) {
+          setUnitApp(null);
+          setMode('unit-select');
+        }
+      }
+    }
+  }, [unitAppProp, leaveApproved, battalion, mode, unitModeFromApp, unitApp]);
+
+  const markUnitClosed = useCallback((app, status = 'withdrawn') => {
+    const closed = { ...(app || {}), status };
+    const id = Number(closed.id || 0);
+    if (id) localClosedRef.current = { id, status };
+    localStorage.removeItem(UNIT_APP_ID_KEY);
+    setUnitApp(closed);
+    setUnitMessages([]);
+    setSelectedUnit('');
+    setMode('unit-closed');
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -174,6 +274,18 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
 
       const list = await api.getUnitList();
       if (list?.units?.length) setUnits(list.units);
+
+      if (initialMode === 'unit-select' || initialMode === 'unit-form') {
+        await loadUnitState();
+        // Prefer subdivision flow when opened from CR card (unless active unit app already set mode)
+        setMode((current) => {
+          if (['unit-pending', 'unit-chat', 'unit-role', 'unit-done', 'unit-closed', 'unit-form'].includes(current)) {
+            return current;
+          }
+          return 'unit-select';
+        });
+        return;
+      }
 
       if (uid) {
         const active = await api.getActiveTicket(uid);
@@ -190,7 +302,7 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
 
       await loadUnitState();
     })();
-  }, [open, api, loadTicketMessages, loadUnitState, playerName, refreshDiscordAuth, refreshSupportOnline]);
+  }, [open, api, loadTicketMessages, loadUnitState, playerName, refreshDiscordAuth, refreshSupportOnline, initialMode]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -222,19 +334,32 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
         }
       }
       if (data?.application) {
+        const st = data.application.status;
+        if (['role_requested', 'withdrawn', 'rejected', 'left'].includes(st) || (st === 'approved' && data.application.role_granted)) {
+          localClosedRef.current = null;
+          localStorage.removeItem(UNIT_APP_ID_KEY);
+          setUnitApp(null);
+          setUnitMessages([]);
+          setMode('unit-select');
+          return;
+        }
+        if (localClosedRef.current && Number(data.application.id) === localClosedRef.current.id) {
+          return;
+        }
         setUnitApp(data.application);
         setUnitMessages(data.messages || []);
-        if (data.application.status === 'approved' && mode !== 'unit-role' && !data.application.role_granted) {
+        if (st === 'approved' && mode !== 'unit-role' && !data.application.role_granted) {
           setMode('unit-role');
         }
-        if (data.application.status === 'processing' && mode === 'unit-pending') {
+        if (st === 'processing' && mode === 'unit-pending') {
           setMode('unit-chat');
         }
-        if (data.application.status === 'role_requested') {
-          setMode('unit-done');
-        }
-        if (data.application.status === 'rejected' || data.application.status === 'withdrawn' || data.application.status === 'left') {
-          setMode('unit-closed');
+      } else {
+        localClosedRef.current = null;
+        localStorage.removeItem(UNIT_APP_ID_KEY);
+        setUnitApp(null);
+        if (['unit-done', 'unit-closed', 'unit-pending', 'unit-chat', 'unit-role'].includes(mode)) {
+          setMode('unit-select');
         }
       }
     }, 4000);
@@ -350,8 +475,12 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
       setError('Выберите подразделение');
       return;
     }
-    if (!unitForm.nick.trim() || !unitForm.callsign.trim() || !unitForm.reason.trim()) {
-      setError('StarFront: укажите Discord-ник, позывной и «Почему к нам»');
+    if (!unitForm.nick.trim() || !(unitForm.character_nick || unitForm.callsign).trim() || !unitForm.experience.trim()) {
+      setError('Укажите Discord-ник, ник персонажа и опыт');
+      return;
+    }
+    if (!unitForm.call_time.trim() || !unitForm.timezone.trim()) {
+      setError('Укажите готовность играть и часовой пояс');
       return;
     }
     const uid = await ensureUid([], { requireLinked: true });
@@ -362,11 +491,19 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
     setLoading(true);
     setError('');
     try {
+      const characterNick = (unitForm.character_nick || unitForm.callsign).trim();
       const res = await api.createUnitApplication({
         discord_user_id: uid,
         unit_id: selectedUnit,
         discord_username: unitForm.nick.trim() || playerName,
-        ...unitForm,
+        nick: unitForm.nick.trim(),
+        character_nick: characterNick,
+        callsign: characterNick,
+        call_time: unitForm.call_time.trim(),
+        timezone: unitForm.timezone.trim(),
+        experience: unitForm.experience.trim(),
+        reason: unitForm.experience.trim(),
+        desired_position: unitForm.desired_position.trim(),
       });
       if (!res?.success) {
         setError(res?.error || 'Не удалось отправить заявку');
@@ -417,40 +554,58 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
     });
     setLoading(false);
     if (res.success) {
-      setUnitApp(res.application);
-      setMode('unit-done');
-      setStatus(res.role_granted ? 'StarFront: роль батальона выдана автоматически' : 'StarFront: запрос отправлен в Discord');
+      localStorage.removeItem(UNIT_APP_ID_KEY);
+      localClosedRef.current = null;
+      setUnitApp(null);
+      setMode('unit-select');
+      setStatus(
+        res.role_granted
+          ? 'StarFront: роль выдана. Можно подать новую заявку при необходимости.'
+          : 'StarFront: запрос ролей отправлен. Заявка завершена — можно подать новую.'
+      );
+      try {
+        await onRefresh?.();
+      } catch {
+        /* ignore */
+      }
     } else setError(res.error || 'Ошибка');
   };
 
-  const isTestUnit = unitApp?.unit_id === 'test';
   const canWithdrawUnit =
-    Boolean(unitApp?.id) &&
-    !['rejected', 'withdrawn', 'left'].includes(unitApp?.status) &&
-    (isTestUnit ||
-      (unitApp?.status !== 'role_requested' && !(unitApp?.status === 'approved' && unitApp?.role_granted)));
+    Boolean(unitApp?.id) && !['rejected', 'withdrawn', 'left'].includes(unitApp?.status);
 
   const withdrawUnitApplication = async () => {
     if (!unitApp?.id) return;
-    if (!window.confirm('Отозвать заявку? Её можно будет подать заново.')) return;
+    if (!window.confirm('Отозвать заявку? После отзыва можно будет подать новую.')) return;
     setLoading(true);
     setError('');
     const uid = await ensureUid();
-    const res = await api.withdrawUnitApplication(unitApp.id, {
-      ...(uid ? { discord_user_id: uid } : {}),
-      player_nick: unitForm.nick || unitApp.nick || playerName,
-    });
+    let res = { success: false };
+    try {
+      res = (await api.withdrawUnitApplication(unitApp.id, {
+        ...(uid ? { discord_user_id: uid } : {}),
+        player_nick: unitForm.nick || unitApp.nick || playerName,
+      })) || { success: false };
+    } catch (e) {
+      res = { success: false, error: e?.message || 'Ошибка API' };
+    }
     setLoading(false);
-    if (!res.success) {
+    const alreadyClosed = /уже закрыта/i.test(String(res.error || ''));
+    if (!res.success && !alreadyClosed) {
       setError(res.error || 'Не удалось отозвать заявку');
       return;
     }
-    localStorage.removeItem(UNIT_APP_ID_KEY);
+    markUnitClosed(res.application || unitApp, 'withdrawn');
+    // Сразу даём подать новую — не держим экран «отозвана»
+    localClosedRef.current = null;
     setUnitApp(null);
-    setUnitMessages([]);
     setMode('unit-select');
-    setSelectedUnit('');
-    setStatus('StarFront: заявка отозвана. Можете подать новую.');
+    setStatus('StarFront: заявка отозвана. Можно подать новую.');
+    try {
+      await onRefresh?.();
+    } catch {
+      /* ignore */
+    }
   };
 
   const closeTicket = async () => {
@@ -583,7 +738,12 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
             )}
             <p className="block-hint bot-hint">Выберите подразделение — дальше заполните форму.</p>
             <div className="topic-grid">
-              {units.map((u) => (
+              {units
+                .filter((u) => {
+                  const req = String(u.requires_faction || '').toUpperCase();
+                  return !req || req === 'ВАР' || req === 'CR' || u.is_test;
+                })
+                .map((u) => (
                 <button
                   key={u.id}
                   type="button"
@@ -633,26 +793,39 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
                 Аккаунт: <strong>{discordUsername || discordUserId}</strong>
               </p>
             )}
-            <p className="block-hint bot-hint">Укажите позывной и остальное — заявка уйдёт командиру с вашим Discord ID.</p>
+            <p className="block-hint bot-hint">
+              Заполните форму. Командир при одобрении выберет звание из списка — оно пойдёт в заявку на роли, но не впишется в ник.
+              Ник персонажа: номер и позывной (можно с препиской, напр. [CR] 3472 Ima).
+            </p>
             <label className="field">
-              <span>Discord-ник (как на сервере)</span>
-              <input value={unitForm.nick} onChange={(e) => setUnitForm((f) => ({ ...f, nick: e.target.value }))} placeholder={playerName || 'CT 1234 Nickname'} />
+              <span>Ник в Discord</span>
+              <input value={unitForm.nick} onChange={(e) => setUnitForm((f) => ({ ...f, nick: e.target.value }))} placeholder={playerName || 'Discord nick'} />
             </label>
             <label className="field">
-              <span>Позывной</span>
-              <input value={unitForm.callsign} onChange={(e) => setUnitForm((f) => ({ ...f, callsign: e.target.value }))} />
+              <span>Ник персонажа (позывной)</span>
+              <input
+                value={unitForm.character_nick || unitForm.callsign}
+                onChange={(e) =>
+                  setUnitForm((f) => ({ ...f, character_nick: e.target.value, callsign: e.target.value }))
+                }
+                placeholder="[CR] 3472 Ima или 3472 Ima"
+              />
             </label>
             <label className="field">
-              <span>Когда удобно созвониться</span>
-              <input value={unitForm.call_time} onChange={(e) => setUnitForm((f) => ({ ...f, call_time: e.target.value }))} />
+              <span>Сколько готовы играть</span>
+              <input value={unitForm.call_time} onChange={(e) => setUnitForm((f) => ({ ...f, call_time: e.target.value }))} placeholder="2–3 часа вечером / каждый день" />
             </label>
             <label className="field">
               <span>Часовой пояс</span>
               <input value={unitForm.timezone} onChange={(e) => setUnitForm((f) => ({ ...f, timezone: e.target.value }))} placeholder="UTC+3" />
             </label>
             <label className="field">
-              <span>Почему именно к нам</span>
-              <textarea value={unitForm.reason} onChange={(e) => setUnitForm((f) => ({ ...f, reason: e.target.value }))} rows={4} />
+              <span>Какой опыт</span>
+              <textarea value={unitForm.experience} onChange={(e) => setUnitForm((f) => ({ ...f, experience: e.target.value }))} rows={3} placeholder="Arma / RP / подразделения…" />
+            </label>
+            <label className="field">
+              <span>Желаемая специализация (необязательно, не должность командира)</span>
+              <input value={unitForm.desired_position} onChange={(e) => setUnitForm((f) => ({ ...f, desired_position: e.target.value }))} placeholder="Medic / Pilot / …" />
             </label>
             {error && <p className="form-error">{error}</p>}
             {status && <p className="form-success">{status}</p>}
@@ -741,14 +914,25 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
 
         {mode === 'unit-done' && (
           <div className="modal-body">
-            <p className="form-success">Запрос ролей отправлен в Discord</p>
+            <p className="form-success">Запрос ролей отправлен — заявка завершена</p>
+            <p className="block-hint">Она больше не активна. Можно подать новую.</p>
             {status && <p className="block-hint">{status}</p>}
             {error && <p className="form-error">{error}</p>}
-            {canWithdrawUnit && (
-              <button type="button" className="btn-ghost-sm" disabled={loading} onClick={withdrawUnitApplication}>
-                Отозвать заявку
-              </button>
-            )}
+            <button
+              type="button"
+              className="btn-save"
+              onClick={() => {
+                localClosedRef.current = null;
+                localStorage.removeItem(UNIT_APP_ID_KEY);
+                setUnitApp(null);
+                setUnitMessages([]);
+                setMode('unit-select');
+                setStatus('');
+                onRefresh?.();
+              }}
+            >
+              Подать новую заявку
+            </button>
           </div>
         )}
 
@@ -757,7 +941,9 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
             <p className={unitApp.status === 'rejected' ? 'form-error' : 'form-success'}>
               {unitApp.status === 'rejected'
                 ? `Заявка #${unitApp.id} отклонена`
-                : `Заявка #${unitApp.id} отозвана`}
+                : unitApp.status === 'left'
+                  ? `Вы вышли из подразделения${unitApp.id ? ` · заявка #${unitApp.id} закрыта` : ''}`
+                  : `Заявка #${unitApp.id} отозвана`}
             </p>
             {unitMessages.length > 0 && (
               <div className="chat-messages">
@@ -773,10 +959,12 @@ export default function SupportHubModal({ open, onClose, playerName, supportOnli
               type="button"
               className="btn-save"
               onClick={() => {
+                localClosedRef.current = null;
                 localStorage.removeItem(UNIT_APP_ID_KEY);
                 setUnitApp(null);
                 setUnitMessages([]);
                 setMode('unit-select');
+                setStatus('');
               }}
             >
               Подать новую заявку

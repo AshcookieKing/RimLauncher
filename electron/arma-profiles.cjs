@@ -94,7 +94,7 @@ function getArmaProfileInfo(options = {}) {
       found: false,
       displayName: options.playerName || '—',
       rank: '—',
-      faction: 'ВАР',
+      faction: null,
       profiles: [],
     };
   }
@@ -105,7 +105,7 @@ function getArmaProfileInfo(options = {}) {
     inGameName: active.displayName,
     rank: active.rank,
     rankCode: active.rankCode,
-    faction: 'ВАР',
+    faction: null,
     role: active.rank,
     profilePath: active.path,
     profiles: listPlayerProfiles().slice(0, 20),

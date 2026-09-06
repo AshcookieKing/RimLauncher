@@ -54,8 +54,9 @@ export default function DiscordAuthGate({ api, onAuthenticated }) {
         setError(res?.error || 'Не удалось войти через Discord');
         return;
       }
-      await api.fetchDiscordData?.();
       onAuthenticated?.(res);
+      // статус тянем в фоне — не блокируем вход долгим API
+      api.fetchDiscordData?.().catch(() => {});
     } catch (e) {
       setError(e.message || 'Ошибка авторизации Discord');
     } finally {
@@ -81,7 +82,7 @@ export default function DiscordAuthGate({ api, onAuthenticated }) {
       <div className="auth-gate-card auth-gate-card--minimal">
         <header className="auth-gate-header">
           <LogoHolo size="sm" />
-          <span>StarFront Launcher</span>
+          <span>StarFrontLauncher</span>
         </header>
         {error && <p className="form-error auth-gate-error">{error}</p>}
         <button type="button" className="auth-gate-btn" disabled={loading} onClick={login}>
