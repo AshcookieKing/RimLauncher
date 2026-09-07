@@ -1,6 +1,6 @@
 # StarFrontLauncher
 
-**Версия:** 1.2.15-alpha  
+**Версия:** 1.2.16-alpha  
 **Платформа:** Windows 10/11 (x64)
 
 Десктопный лаунчер для тактического RP-сервера **StarFront** (Arma 3 — Clone Wars).
@@ -66,6 +66,10 @@ https://github.com/AshcookieKing/StarFront/releases/latest
 ---
 
 ## Changelog
+
+### 1.2.16-alpha
+
+- Автообновление без лимита GitHub API (`latest.yml`)
 
 ### 1.2.15-alpha
 

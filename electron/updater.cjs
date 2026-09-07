@@ -5,6 +5,7 @@ const GITHUB_OWNER = 'AshcookieKing';
 const GITHUB_REPO = 'StarFront';
 const USER_AGENT = 'StarFrontLauncher';
 const LAUNCHER_EXE_NAMES = [/^StarFrontLauncher\.exe$/i];
+const LATEST_YML_URL = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest/download/latest.yml`;
 
 function fetchText(url, redirects = 0) {
   return new Promise((resolve, reject) => {
@@ -12,7 +13,7 @@ function fetchText(url, redirects = 0) {
       url,
       {
         headers: {
-          Accept: 'application/vnd.github+json',
+          Accept: 'text/plain, application/octet-stream, */*',
           'User-Agent': USER_AGENT,
         },
       },
@@ -118,6 +119,13 @@ function releaseDownloadUrl(release, fileName) {
   return release?.html_url || '';
 }
 
+function publicDownloadUrl(fileName, tag = '') {
+  if (tag) {
+    return `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/download/${tag}/${fileName}`;
+  }
+  return `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest/download/${fileName}`;
+}
+
 async function fetchLatestReleaseJson() {
   const listUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases?per_page=20`;
   const listText = await fetchText(listUrl);
@@ -126,51 +134,92 @@ async function fetchLatestReleaseJson() {
   return release;
 }
 
+async function checkFromManifest(currentVersion) {
+  const manifest = parseLatestYml(await fetchText(LATEST_YML_URL));
+  const remoteVersion = manifest?.version || '';
+  if (!remoteVersion || !isNewerVersion(remoteVersion, currentVersion)) {
+    return { updateAvailable: false, currentVersion, remoteVersion: remoteVersion || currentVersion };
+  }
+  const fileFromManifest =
+    manifest.files.find((f) => LAUNCHER_EXE_NAMES.some((re) => re.test(f.url))) ||
+    manifest.files.find((f) => /\.exe$/i.test(f.url));
+  const zipFromManifest = manifest.files.find((f) => /\.zip$/i.test(f.url));
+  const fileName = fileFromManifest?.url || 'StarFrontLauncher.exe';
+  const tag = `v${remoteVersion}`;
+  return {
+    updateAvailable: true,
+    currentVersion,
+    remoteVersion,
+    releaseName: `StarFrontLauncher ${remoteVersion}`,
+    releaseNotes: '',
+    releasePage: `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/releases/tag/${tag}`,
+    releaseTag: tag,
+    downloadUrl: publicDownloadUrl(fileName),
+    zipUrl: zipFromManifest ? publicDownloadUrl(zipFromManifest.url) : '',
+    manifest,
+    fileName,
+    sha512: fileFromManifest?.sha512 || '',
+    fileSize: fileFromManifest?.size || 0,
+  };
+}
+
+async function checkFromApi(currentVersion) {
+  const release = await fetchLatestReleaseJson();
+  if (release.draft) {
+    return { updateAvailable: false, currentVersion, error: 'release is draft' };
+  }
+  const tagVersion = String(release.tag_name || '').replace(/^v/i, '');
+  const ymlAsset = (release.assets || []).find((a) => a.name === 'latest.yml');
+  let manifest = null;
+  if (ymlAsset?.browser_download_url) {
+    try {
+      manifest = parseLatestYml(await fetchText(ymlAsset.browser_download_url));
+    } catch {}
+  }
+  const remoteVersion = manifest?.version || tagVersion;
+  if (!remoteVersion || !isNewerVersion(remoteVersion, currentVersion)) {
+    return { updateAvailable: false, currentVersion, remoteVersion: remoteVersion || currentVersion };
+  }
+  const exeAsset =
+    (release.assets || []).find((a) => LAUNCHER_EXE_NAMES.some((re) => re.test(a.name))) ||
+    (release.assets || []).find((a) => a.name.endsWith('.exe'));
+  const zipAsset = (release.assets || []).find((a) => /\.zip$/i.test(a.name));
+  const fileFromManifest = manifest?.files?.find((f) => /\.exe$/i.test(f.url));
+  const fileName = exeAsset?.name || fileFromManifest?.url || 'StarFrontLauncher.exe';
+  const sha512 =
+    manifest?.files?.find((f) => f.url === fileName)?.sha512 ||
+    manifest?.files?.find((f) => /\.exe$/i.test(f.url))?.sha512 ||
+    '';
+  return {
+    updateAvailable: true,
+    currentVersion,
+    remoteVersion,
+    releaseName: release.name || release.tag_name,
+    releaseNotes: release.body || '',
+    releasePage: release.html_url,
+    releaseTag: release.tag_name || '',
+    downloadUrl: releaseDownloadUrl(release, fileName),
+    zipUrl: zipAsset ? releaseDownloadUrl(release, zipAsset.name) : '',
+    manifest,
+    fileName,
+    sha512,
+    fileSize: exeAsset?.size || manifest?.files?.find((f) => f.url === fileName)?.size || 0,
+  };
+}
+
 async function checkForUpdates(currentVersion) {
   try {
-    const release = await fetchLatestReleaseJson();
-    if (release.draft) {
-      return { updateAvailable: false, currentVersion, error: 'release is draft' };
+    return await checkFromManifest(currentVersion);
+  } catch (manifestErr) {
+    try {
+      return await checkFromApi(currentVersion);
+    } catch (apiErr) {
+      return {
+        updateAvailable: false,
+        currentVersion,
+        error: manifestErr.message || apiErr.message || 'update check failed',
+      };
     }
-    const tagVersion = String(release.tag_name || '').replace(/^v/i, '');
-    const ymlAsset = (release.assets || []).find((a) => a.name === 'latest.yml');
-    let manifest = null;
-    if (ymlAsset?.browser_download_url) {
-      try {
-        manifest = parseLatestYml(await fetchText(ymlAsset.browser_download_url));
-      } catch {}
-    }
-    const remoteVersion = manifest?.version || tagVersion;
-    if (!remoteVersion || !isNewerVersion(remoteVersion, currentVersion)) {
-      return { updateAvailable: false, currentVersion, remoteVersion: remoteVersion || currentVersion };
-    }
-    const exeAsset =
-      (release.assets || []).find((a) => LAUNCHER_EXE_NAMES.some((re) => re.test(a.name))) ||
-      (release.assets || []).find((a) => a.name.endsWith('.exe'));
-    const zipAsset = (release.assets || []).find((a) => /\.zip$/i.test(a.name));
-    const fileFromManifest = manifest?.files?.find((f) => /\.exe$/i.test(f.url));
-    const fileName = exeAsset?.name || fileFromManifest?.url || 'StarFrontLauncher.exe';
-    const sha512 =
-      manifest?.files?.find((f) => f.url === fileName)?.sha512 ||
-      manifest?.files?.find((f) => /\.exe$/i.test(f.url))?.sha512 ||
-      '';
-    return {
-      updateAvailable: true,
-      currentVersion,
-      remoteVersion,
-      releaseName: release.name || release.tag_name,
-      releaseNotes: release.body || '',
-      releasePage: release.html_url,
-      releaseTag: release.tag_name || '',
-      downloadUrl: releaseDownloadUrl(release, fileName),
-      zipUrl: zipAsset ? releaseDownloadUrl(release, zipAsset.name) : '',
-      manifest,
-      fileName,
-      sha512,
-      fileSize: exeAsset?.size || manifest?.files?.find((f) => f.url === fileName)?.size || 0,
-    };
-  } catch (e) {
-    return { updateAvailable: false, currentVersion, error: e.message || 'update check failed' };
   }
 }
 
