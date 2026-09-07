@@ -20,8 +20,8 @@ $headers = @{
 
 $body = @{
   tag_name         = $tag
-  name             = "StarFront Launcher $Version"
-  body             = "RP rules site, SF4 preset, TS StarFront address. Version $Version"
+  name             = "StarFrontLauncher $Version"
+  body             = "Holonet scroll fix, client ID, /add_star_point. Version $Version"
   draft            = $false
   prerelease       = $false
   make_latest      = 'true'

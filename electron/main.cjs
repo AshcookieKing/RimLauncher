@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, shell, Notification, dialog, session } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const Store = require('electron-store');
 const { loadPreset, resolvePresetPath } = require('./preset.cjs');
 const { derivePathsFromArmaExe, derivePathsFromSteamLibrary, validateGamePaths, detectGamePaths, ARMA_APP_ID } = require('./paths.cjs');
@@ -68,8 +69,20 @@ const store = new Store({
     staticMenuBackground: false,
     pathsConfigured: false,
     playtimeAccumulatedMs: 0,
+    clientId: '',
   },
 });
+
+function ensureClientId() {
+  let id = String(store.get('clientId') || '').trim();
+  if (!id) {
+    id = crypto.randomUUID();
+    store.set('clientId', id);
+  }
+  return id;
+}
+
+ensureClientId();
 
 if (
   store.get('newbiePromptComplete') !== true &&
@@ -349,6 +362,7 @@ function settingsPayload() {
   return {
     ...getConfig(),
     ...store.store,
+    clientId: ensureClientId(),
     appVersion: APP_VERSION,
     presetPath,
     defaultPresetPath: resolvePresetPath({
@@ -637,8 +651,10 @@ ipcMain.handle('discord-auth-login', async () => {
           profileId: store.get('activeProfileId'),
         });
         const playerName = armaInfo.displayName || store.get('playerName') || '';
+        const clientId = ensureClientId();
+        discord.registerLauncherClient(clientId, result.discordUserId, apiBase()).catch(() => {});
         cachedDiscordData = enrichDiscordData(
-          await discord.fetchLauncherStatus(result.discordUserId, apiBase(), playerName)
+          await discord.fetchLauncherStatus(result.discordUserId, apiBase(), playerName, clientId)
         );
         mainWindow?.webContents.send('discord-data', cachedDiscordData);
         mainWindow?.webContents.send('discord-auth-updated', response);
@@ -749,9 +765,10 @@ ipcMain.handle('fetch-discord-data', async () => {
   });
   const playerName = armaInfo.displayName || store.get('playerName') || '';
   let discordUserId = await ensureDiscordUserId();
+  const clientId = ensureClientId();
 
   cachedDiscordData = enrichDiscordData(
-    await discord.fetchLauncherStatus(discordUserId, apiBase(), playerName)
+    await discord.fetchLauncherStatus(discordUserId, apiBase(), playerName, clientId)
   );
 
   const profileId = cachedDiscordData?.profile?.discord_id;
@@ -761,9 +778,13 @@ ipcMain.handle('fetch-discord-data', async () => {
     discordUserId = await ensureDiscordUserId([playerName]);
     if (discordUserId) {
       cachedDiscordData = enrichDiscordData(
-        await discord.fetchLauncherStatus(discordUserId, apiBase(), playerName)
+        await discord.fetchLauncherStatus(discordUserId, apiBase(), playerName, clientId)
       );
     }
+  }
+
+  if (clientId) {
+    discord.registerLauncherClient(clientId, getLinkedDiscordUserId(), apiBase()).catch(() => {});
   }
 
   const localOnline = await resolveOnlineStatus(SERVER_HOST, SERVER_PORT);

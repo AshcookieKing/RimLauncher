@@ -40,6 +40,10 @@ export default function SettingsPanel({ settings, onSave, onBack, api, discord, 
     ({ approved: 'Верифицирован', pending: 'Ожидает', rejected: 'Отклонён', superseded: 'Заменён' }[s] || s || '—');
 
   useEffect(() => {
+    setForm((f) => ({ ...f, ...settings, clientId: settings.clientId || f.clientId }));
+  }, [settings]);
+
+  useEffect(() => {
     if (discord?.character_verifications) {
       setCharacters(discord.character_verifications);
     }
@@ -315,6 +319,31 @@ export default function SettingsPanel({ settings, onSave, onBack, api, discord, 
                 Создать профиль
               </button>
               {profileMsg && <p className="block-hint">{profileMsg}</p>}
+            </div>
+          </div>
+
+          <div className="settings-block">
+            <h3>ID клиента</h3>
+            <p className="block-hint">
+              Уникальный ID этой установки лаунчера. Передайте его модератору для зачисления STAR POINT
+              (`/add_star_point`).
+            </p>
+            <div className="settings-actions-row" style={{ flexWrap: 'wrap', gap: 8 }}>
+              <code className="client-id-code">{form.clientId || '—'}</code>
+              <button
+                type="button"
+                className="btn-ghost-sm"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(String(form.clientId || ''));
+                    setPathMsg('ID клиента скопирован');
+                  } catch {
+                    setPathMsg('Не удалось скопировать');
+                  }
+                }}
+              >
+                Копировать
+              </button>
             </div>
           </div>
 

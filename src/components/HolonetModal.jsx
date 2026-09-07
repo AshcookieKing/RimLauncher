@@ -268,7 +268,7 @@ export default function HolonetModal({ open, posts, focusId, onClose, onRefresh 
 
   return (
     <div className="modal-overlay" onClick={onClose} role="presentation">
-      <section className="modal holonet-modal" onClick={(e) => e.stopPropagation()}>
+      <section className="holonet-modal" onClick={(e) => e.stopPropagation()}>
         <header className="modal-header">
           <h2>HOLONET</h2>
           <div className="modal-actions">

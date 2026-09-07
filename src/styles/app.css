@@ -403,22 +403,57 @@
 .holonet-modal {
   width: min(980px, 96vw);
   max-height: 88vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: rgba(4, 18, 36, 0.96);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  box-shadow: 0 0 40px rgba(0, 120, 200, 0.2);
+  padding: 0 0 14px;
+}
+
+.holonet-modal .modal-header {
+  flex-shrink: 0;
+}
+
+.holonet-modal > .block-hint {
+  flex-shrink: 0;
+  padding: 0 20px;
 }
 
 .holonet-modal-layout {
   display: grid;
   grid-template-columns: 240px 1fr;
   gap: 14px;
-  min-height: 420px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 16px;
 }
 
 .holonet-rail {
   overflow: auto;
-  max-height: 62vh;
+  min-height: 0;
+  max-height: none;
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding-right: 4px;
+}
+
+.holonet-detail {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.holonet-detail-media {
+  flex-shrink: 0;
 }
 
 .holonet-rail-item {
@@ -577,6 +612,7 @@
   line-height: 1.45;
   color: var(--text);
   margin: 0 0 12px;
+  overflow-wrap: anywhere;
 }
 
 .title-link--holonet {
@@ -1528,6 +1564,18 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
+}
+
+.client-id-code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.78rem;
+  padding: 6px 10px;
+  background: rgba(0, 40, 70, 0.55);
+  border: 1px solid rgba(80, 180, 255, 0.25);
+  color: #b8e4ff;
+  word-break: break-all;
+  max-width: 100%;
+  user-select: all;
 }
 
 .btn-link-inline {

@@ -83,11 +83,12 @@ async function fetchNewsFeed(apiBaseUrl) {
   }
 }
 
-async function fetchLauncherStatus(discordUserId, apiBaseUrl = DEFAULT_API, playerName = '') {
+async function fetchLauncherStatus(discordUserId, apiBaseUrl = DEFAULT_API, playerName = '', clientId = '') {
   const base = apiBase(apiBaseUrl);
   const params = new URLSearchParams();
   if (discordUserId) params.set('discord_user_id', String(discordUserId));
   if (playerName) params.set('player_name', String(playerName));
+  if (clientId) params.set('client_id', String(clientId));
   const q = params.toString() ? `?${params.toString()}` : '';
   const directNewsPromise = directFeed.fetchNewsDirect().catch(() => []);
   const directHolonetPromise = directFeed.fetchHolonetDirect().catch(() => []);
@@ -381,6 +382,18 @@ async function cancelCharacterVerification(payload, apiBaseUrl) {
   return safePost('/api/launcher/character/cancel', payload, apiBaseUrl);
 }
 
+async function registerLauncherClient(clientId, discordUserId, apiBaseUrl) {
+  if (!clientId) return { success: false, error: 'no_client_id' };
+  return safePost(
+    '/api/launcher/client/register',
+    {
+      client_id: String(clientId),
+      discord_user_id: discordUserId ? String(discordUserId) : '',
+    },
+    apiBaseUrl
+  );
+}
+
 module.exports = {
   DEFAULT_API,
   fetchLauncherStatus,
@@ -416,4 +429,5 @@ module.exports = {
   getCharacterVerification,
   selectCharacterVerification,
   cancelCharacterVerification,
+  registerLauncherClient,
 };
