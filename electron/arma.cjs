@@ -77,14 +77,6 @@ function ensureSteamAppId(armaDir) {
   }
 }
 
-function resolveSteamExe(config) {
-  try {
-    return require('./steam-workshop.cjs').resolveSteamExe(config) || null;
-  } catch {
-    return null;
-  }
-}
-
 function syncWorkshopWithArma(config) {
   const result = { modFolders: 0, installedIds: [] };
   if (!fs.existsSync(config.workshopDir)) return result;
@@ -321,26 +313,17 @@ function launchGame(config, modParam) {
     ensureSteamAppId(armaDir);
 
     const args = buildLaunchArgs(config, modParam);
-    const useProfiling = path.basename(armaExe).toLowerCase().includes('profiling');
-    const steamExe = resolveSteamExe(config);
+    // Прямой запуск exe: Steam -applaunch часто не стартует игру с длинным -mod=
+    const child = spawn(armaExe, args, {
+      cwd: armaDir,
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+    });
 
-    // Обычный exe — через Steam (корректная загрузка a3\data_f\*.paa / интро).
-    // Profiling — напрямую (Steam всегда стартует vanilla exe).
-    let child;
-    if (!useProfiling && steamExe && fs.existsSync(steamExe)) {
-      child = spawn(steamExe, ['-applaunch', String(ARMA_APP_ID), ...args], {
-        cwd: path.dirname(steamExe),
-        detached: true,
-        stdio: 'ignore',
-        windowsHide: true,
-      });
-    } else {
-      child = spawn(armaExe, args, {
-        cwd: armaDir,
-        detached: true,
-        stdio: 'ignore',
-      });
-    }
+    child.on('error', (err) => {
+      reject(new Error(err?.message || 'Не удалось запустить Arma 3'));
+    });
 
     const pid = child.pid;
     child.unref();
@@ -348,7 +331,7 @@ function launchGame(config, modParam) {
       ok: true,
       exe: path.basename(armaExe),
       pid,
-      viaSteam: Boolean(!useProfiling && steamExe),
+      viaSteam: false,
       args,
     });
   });

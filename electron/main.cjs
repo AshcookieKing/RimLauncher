@@ -26,7 +26,7 @@ const SERVER_PORT = 2302;
 const BOT_API_URL = discord.DEFAULT_API;
 
 const STORE_KEYS = new Set([
-  'armaExe', 'steamPath', 'workshopDir', 'serverPassword', 'playerName', 'activeProfileId',
+  'armaExe', 'steamPath', 'workshopDir', 'serverPassword', 'teamspeakPassword', 'playerName', 'activeProfileId',
   'discordUserId', 'discordUsername', 'discordOAuthLinked', 'extraLaunchArgs', 'blurAmount', 'scanlineIntensity', 'animationsEnabled',
   'battlEye', 'optimizedLaunch', 'screenMode', 'performancePreset', 'cpuCount', 'maxMem',
   'maxVram', 'exThreads', 'tutorialComplete', 'showEventAnnouncement', 'showEventCalendar',
@@ -40,6 +40,7 @@ const store = new Store({
     steamPath: '',
     workshopDir: '',
     serverPassword: '',
+    teamspeakPassword: 'StarFront',
     playerName: '',
     activeProfileId: '',
     discordUserId: '',
@@ -342,6 +343,7 @@ function getConfig() {
     serverHost: SERVER_HOST,
     serverPort: SERVER_PORT,
     serverPassword: store.get('serverPassword'),
+    teamspeakPassword: store.get('teamspeakPassword') != null ? store.get('teamspeakPassword') : 'StarFront',
     playerName: store.get('playerName') || armaInfo.displayName,
     armaProfileName: armaInfo.displayName,
     extraLaunchArgs: store.get('extraLaunchArgs'),
@@ -616,6 +618,9 @@ ipcMain.handle('save-settings', async (_, settings) => {
   }
   if (settings.serverPassword !== undefined) {
     store.set('serverPassword', String(settings.serverPassword || '').trim());
+  }
+  if (settings.teamspeakPassword !== undefined) {
+    store.set('teamspeakPassword', String(settings.teamspeakPassword || '').trim());
   }
   if (settings.presetPath !== undefined && settings.presetPath !== oldPreset) {
     try {

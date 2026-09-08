@@ -507,7 +507,7 @@ export default function SettingsPanel({ settings, onSave, onBack, api, discord, 
           <div className="settings-block">
             <h3>Запуск игры</h3>
             <label className="field">
-              <span>Пароль сервера</span>
+              <span>Пароль сервера Arma</span>
               <input
                 type="text"
                 autoComplete="off"
@@ -519,6 +519,20 @@ export default function SettingsPanel({ settings, onSave, onBack, api, discord, 
             </label>
             <p className="block-hint">
               При СТАРТ лаунчер подключится с `-password`. Оставьте пустым, если пароля нет.
+            </p>
+            <label className="field">
+              <span>Пароль TeamSpeak</span>
+              <input
+                type="text"
+                autoComplete="off"
+                spellCheck={false}
+                value={form.teamspeakPassword ?? 'StarFront'}
+                onChange={(e) => set('teamspeakPassword', e.target.value)}
+                placeholder="Пароль TS (если есть)"
+              />
+            </label>
+            <p className="block-hint">
+              Подключение к TS при запуске: адрес StarFront · порт 10026. Пустое поле — без пароля.
             </p>
             <label className="field">
               <span>Режим экрана</span>
@@ -618,7 +632,7 @@ export default function SettingsPanel({ settings, onSave, onBack, api, discord, 
           </button>
         </form>
         <p className="settings-footer">
-          TeamSpeak: адрес <strong>StarFront</strong> · порт 10026 · пароль StarFront · Arma: 109.248.4.45:2302
+          TeamSpeak: адрес <strong>StarFront</strong> · порт 10026 · пароль из настроек · Arma: 109.248.4.45:2302
         </p>
       </section>
     </div>

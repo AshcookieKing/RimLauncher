@@ -384,7 +384,9 @@ async function connectTeamSpeak(clientPath, server = TS_SERVER, port = TS_PORT, 
 async function ensureTeamSpeak({ workshopDir, onProgress, server, port, password } = {}) {
   const host = server || TS_SERVER;
   const tsPort = port || TS_PORT;
-  const tsPass = password != null ? password : TS_PASSWORD;
+  // undefined → дефолт; '' → без пароля; иначе — из настроек
+  const tsPass =
+    password === undefined || password === null ? TS_PASSWORD : String(password).trim();
   const result = {
     ok: true,
     warnings: [],

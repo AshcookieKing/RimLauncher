@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.18-alpha
+
+- Фикс запуска Arma: снова прямой старт exe (Steam `-applaunch` не поднимал игру)
+- Пароль TeamSpeak в настройках — подставляется при подключении к TS
+
 ## 1.2.17-alpha
 
 - Фикс интро / `noise_raw.paa`: убраны `-skipIntro`/`-world=empty`/`-noSplash` из оптимизированного запуска; запуск через Steam

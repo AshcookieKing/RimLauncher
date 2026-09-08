@@ -104,6 +104,7 @@ async function prepareAndLaunch({ mods, config, onProgress, onDiscordRefresh }) 
     const ts = await ensureTeamSpeak({
       workshopDir: config.workshopDir,
       onProgress: (msg) => onProgress(91, msg),
+      password: config.teamspeakPassword,
     });
     if (ts.warnings?.length) {
       onProgress(92, ts.warnings[0]);
