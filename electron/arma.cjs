@@ -11,6 +11,14 @@ const PERFORMANCE_PRESETS = {
   ultra: { cpuCount: 16, exThreads: 7, maxMem: 32768, maxVram: 4096, hugePages: true },
 };
 
+/** Параметры, которые ломают интро StarFront / меню и часто дают Cannot load mipmap … noise_raw.paa */
+const BANNED_LAUNCH_ARGS = new Set([
+  '-skipintro',
+  '-nosplash',
+  '-world=empty',
+  '-worldempty',
+]);
+
 function performanceArgs(config) {
   const preset = PERFORMANCE_PRESETS[config.performancePreset] || PERFORMANCE_PRESETS.high;
   const cpu = config.cpuCount || preset.cpuCount;
@@ -21,14 +29,60 @@ function performanceArgs(config) {
   return args;
 }
 
+function normalizeArgKey(arg) {
+  const raw = String(arg || '').trim();
+  if (!raw) return '';
+  const eq = raw.indexOf('=');
+  const key = (eq >= 0 ? raw.slice(0, eq) : raw).toLowerCase();
+  return key.startsWith('-') ? key : `-${key}`;
+}
+
+function isBannedLaunchArg(arg, { allowNoSplash = false } = {}) {
+  const key = normalizeArgKey(arg);
+  if (!key) return true;
+  if (key === '-nosplash') return !allowNoSplash;
+  if (key === '-world' && /=?\s*empty$/i.test(String(arg).replace(/\s+/g, ''))) return true;
+  if (BANNED_LAUNCH_ARGS.has(key)) return true;
+  if (key === '-world' && String(arg).toLowerCase().includes('empty')) return true;
+  return false;
+}
+
+function sanitizeExtraArgs(extra, { allowNoSplash = false } = {}) {
+  const parts = String(extra || '')
+    .split(/\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return parts.filter((a) => !isBannedLaunchArg(a, { allowNoSplash }));
+}
+
 function resolveArmaExe(config) {
   const base = config.armaExe;
   const dir = path.dirname(base);
   const profiling = path.join(dir, 'arma3_x64_profiling.exe');
-  if (config.optimizedLaunch && fs.existsSync(profiling)) return profiling;
+  // profiling только при явном «Оптимизированный запуск» — иначе ломается интро/ассеты
+  if (config.optimizedLaunch === true && fs.existsSync(profiling)) return profiling;
   if (fs.existsSync(base)) return base;
   if (fs.existsSync(profiling)) return profiling;
   return base;
+}
+
+function ensureSteamAppId(armaDir) {
+  try {
+    const file = path.join(armaDir, 'steam_appid.txt');
+    if (!fs.existsSync(file)) {
+      fs.writeFileSync(file, `${ARMA_APP_ID}\n`, 'utf8');
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function resolveSteamExe(config) {
+  try {
+    return require('./steam-workshop.cjs').resolveSteamExe(config) || null;
+  } catch {
+    return null;
+  }
 }
 
 function syncWorkshopWithArma(config) {
@@ -217,31 +271,43 @@ function buildModParam(modResults) {
 }
 
 function buildLaunchArgs(config, modParam) {
+  const allowNoSplash = config.skipLogos === true;
   const args = [];
-  if (config.skipLogos === true) args.push('-noSplash');
-  // Интро меню StarFront нельзя отключить — никогда не передаём -skipIntro / -world=empty
+
+  // Логотипы BI: только по явному флагу. Оптимизированный запуск их НЕ пропускает.
+  if (allowNoSplash) args.push('-noSplash');
+
+  // Интро StarFront / меню: никогда -skipIntro / -world=empty
   if (config.optimizedLaunch === true) {
+    // Только perf: profiling.exe выбирается в resolveArmaExe
     args.push('-noPause', ...performanceArgs(config));
   } else if (config.performancePreset && config.performancePreset !== 'off') {
     args.push(...performanceArgs(config));
   }
+
   const mode = config.screenMode || 'borderless';
   if (mode === 'windowed') args.push('-window');
   else if (mode === 'fullscreen') args.push('-fullscreen');
   else args.push('-noBorder');
+
   if (modParam) args.push(`-mod=${modParam}`);
   const name = config.playerName || config.armaProfileName;
   if (name) args.push(`-name=${name}`);
+
   if (config.serverHost) {
     args.push(`-connect=${config.serverHost}`);
     if (config.serverPort) args.push(`-port=${config.serverPort}`);
   }
-  if (config.serverPassword) args.push(`-password=${config.serverPassword}`);
+
+  const password = String(config.serverPassword || '').trim();
+  if (password) args.push(`-password=${password}`);
+
   if (config.battlEye === false) args.push('-noBattlEye');
-  if (config.extraLaunchArgs) {
-    args.push(...config.extraLaunchArgs.split(/\s+/).map((s) => s.trim()).filter(Boolean));
-  }
-  return args;
+
+  args.push(...sanitizeExtraArgs(config.extraLaunchArgs, { allowNoSplash }));
+
+  // Финальная страховка от запрещённых флагов (в т.ч. из старых пресетов)
+  return args.filter((a) => !isBannedLaunchArg(a, { allowNoSplash }));
 }
 
 function launchGame(config, modParam) {
@@ -251,14 +317,40 @@ function launchGame(config, modParam) {
       reject(new Error('Arma 3 не найдена. Установите игру через Steam.'));
       return;
     }
-    const child = spawn(armaExe, buildLaunchArgs(config, modParam), {
-      cwd: path.dirname(armaExe),
-      detached: true,
-      stdio: 'ignore',
-    });
+    const armaDir = path.dirname(armaExe);
+    ensureSteamAppId(armaDir);
+
+    const args = buildLaunchArgs(config, modParam);
+    const useProfiling = path.basename(armaExe).toLowerCase().includes('profiling');
+    const steamExe = resolveSteamExe(config);
+
+    // Обычный exe — через Steam (корректная загрузка a3\data_f\*.paa / интро).
+    // Profiling — напрямую (Steam всегда стартует vanilla exe).
+    let child;
+    if (!useProfiling && steamExe && fs.existsSync(steamExe)) {
+      child = spawn(steamExe, ['-applaunch', String(ARMA_APP_ID), ...args], {
+        cwd: path.dirname(steamExe),
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+    } else {
+      child = spawn(armaExe, args, {
+        cwd: armaDir,
+        detached: true,
+        stdio: 'ignore',
+      });
+    }
+
     const pid = child.pid;
     child.unref();
-    resolve({ ok: true, exe: path.basename(armaExe), pid });
+    resolve({
+      ok: true,
+      exe: path.basename(armaExe),
+      pid,
+      viaSteam: Boolean(!useProfiling && steamExe),
+      args,
+    });
   });
 }
 

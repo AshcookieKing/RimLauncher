@@ -509,11 +509,17 @@ export default function SettingsPanel({ settings, onSave, onBack, api, discord, 
             <label className="field">
               <span>Пароль сервера</span>
               <input
-                type="password"
+                type="text"
+                autoComplete="off"
+                spellCheck={false}
                 value={form.serverPassword || ''}
                 onChange={(e) => set('serverPassword', e.target.value)}
+                placeholder="Если сервер запаролен — введите пароль"
               />
             </label>
+            <p className="block-hint">
+              При СТАРТ лаунчер подключится с `-password`. Оставьте пустым, если пароля нет.
+            </p>
             <label className="field">
               <span>Режим экрана</span>
               <select value={form.screenMode || 'borderless'} onChange={(e) => set('screenMode', e.target.value)}>
@@ -544,12 +550,13 @@ export default function SettingsPanel({ settings, onSave, onBack, api, discord, 
               checked={form.optimizedLaunch === true}
               onChange={(v) => set('optimizedLaunch', v)}
               label="Оптимизированный запуск"
-              hint="profiling.exe + параметры производительности"
+              hint="profiling.exe + CPU/RAM — интро и логотипы не отключаются"
             />
             <Toggle
               checked={form.skipLogos === true}
               onChange={(v) => set('skipLogos', v)}
-              label="Пропускать логотипы при запуске"
+              label="Пропускать логотипы Bohemia"
+              hint="Только -noSplash. Интро StarFront не затрагивается"
             />
           </div>
 

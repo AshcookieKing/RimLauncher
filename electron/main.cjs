@@ -65,7 +65,7 @@ const store = new Store({
     showHolonetOnHome: true,
     presetPath: '',
     skipIntro: false,
-    skipLogos: true,
+    skipLogos: false,
     staticMenuBackground: false,
     pathsConfigured: false,
     playtimeAccumulatedMs: 0,
@@ -83,6 +83,12 @@ function ensureClientId() {
 }
 
 ensureClientId();
+
+if (store.get('skipLogosMigrated_v16') !== true) {
+  // Старый дефолт skipLogos=true ломал интро/логотипы — сбрасываем один раз
+  store.set('skipLogos', false);
+  store.set('skipLogosMigrated_v16', true);
+}
 
 if (
   store.get('newbiePromptComplete') !== true &&
@@ -351,7 +357,7 @@ function getConfig() {
     maxVram: store.get('maxVram') || 0,
     exThreads: store.get('exThreads') || 0,
     skipIntro: false,
-    skipLogos: store.get('skipLogos', true) === true,
+    skipLogos: store.get('skipLogos') === true,
     staticMenuBackground: false,
   };
 }
@@ -596,6 +602,21 @@ ipcMain.handle('save-settings', async (_, settings) => {
   // Интро всегда включено — игнорируем старые сохранённые флаги
   store.set('skipIntro', false);
   store.set('staticMenuBackground', false);
+  if (settings.extraLaunchArgs !== undefined) {
+    const cleaned = String(settings.extraLaunchArgs || '')
+      .split(/\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .filter((a) => {
+        const low = a.toLowerCase();
+        return !low.includes('skipintro') && !low.includes('world=empty') && low !== '-world=empty';
+      })
+      .join(' ');
+    store.set('extraLaunchArgs', cleaned);
+  }
+  if (settings.serverPassword !== undefined) {
+    store.set('serverPassword', String(settings.serverPassword || '').trim());
+  }
   if (settings.presetPath !== undefined && settings.presetPath !== oldPreset) {
     try {
       loadModsList();
